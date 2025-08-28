@@ -3,6 +3,7 @@ local servers = {
     "lua_ls",
 	"pyright",
 	"jsonls",
+    "roslyn",
 }
 
 local settings = {
@@ -33,25 +34,42 @@ if not lspconfig_status_ok then
     return
 end
 
-local opts = {}
+-- local opts = {}
+--
+-- for _, server in pairs(servers) do
+--     if server =="roslyn" then
+--         goto continue;
+--     end
+-- 	opts = {
+-- 		on_attach = require("local.lsp.handlers").on_attach,
+-- 		capabilities = require("local.lsp.handlers").capabilities,
+-- 	}
+--
+-- 	server = vim.split(server, "@")[1]
+--
+-- 	local require_ok, conf_opts = pcall(require, "local.lsp.settings." .. server)
+-- 	if require_ok then
+-- 		opts = vim.tbl_deep_extend("force", conf_opts, opts)
+-- 	end
+--
+-- 	lspconfig[server].setup(opts)
+--     ::continue::
+-- end
 
-for _, server in pairs(servers) do
-	opts = {
-		on_attach = require("local.lsp.handlers").on_attach,
-		capabilities = require("local.lsp.handlers").capabilities,
-	}
+vim.lsp.config("roslyn", {
+	-- on_attach = require("local.lsp.handlers").on_attach,
+	capabilities = require("local.lsp.handlers").capabilities,
+    settings = {
+        ["csharp|inlay_hints"] = {
+            csharp_enable_inlay_hints_for_implicit_object_creation = true,
+            csharp_enable_inlay_hints_for_implicit_variable_types = true,
+        },
+        ["csharp|code_lens"] = {
+            dotnet_enable_references_code_lens = true,
+        },
+    },
+})
 
-	server = vim.split(server, "@")[1]
-
-	local require_ok, conf_opts = pcall(require, "local.lsp.settings." .. server)
-	if require_ok then
-		opts = vim.tbl_deep_extend("force", conf_opts, opts)
-	end
-
-	lspconfig[server].setup(opts)
-end
-
--- lspconfig["omnisharp"].setup({
 --     cmd = { "omnisharp", '--languageserver', '--hostPID', tostring(vim.fn.getpid()) },
 --     handlers = {
 --         ["textDocument/definition"] = require('omnisharp_extended').handler,
