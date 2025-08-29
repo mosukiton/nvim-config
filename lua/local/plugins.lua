@@ -48,15 +48,18 @@ local plugins = {
     },
 
     -- LSP
-    { "neovim/nvim-lspconfig" }, -- enable LSP
-    { "williamboman/mason.nvim" }, -- simple to use language server installer
-    { "williamboman/mason-lspconfig.nvim" }, -- simple to use language server installer
-    { "jose-elias-alvarez/null-ls.nvim" }, -- LSP diagnostics and code actions
+    -- simple to use language server installer
+    {
+        "mason-org/mason-lspconfig.nvim",
+        opts = require "local.lsp.mason-lspconfig",
+        dependencies = {
+            { "mason-org/mason.nvim", opts = require "local.lsp.mason" },
+            "neovim/nvim-lspconfig",
+        },
+    },
     {
         "seblyng/roslyn.nvim",
         ft = "cs",
-        ---@module 'roslyn.config'
-        ---@type RoslynNvimConfig
         opts = require "local.lsp.settings.roslyn"
     },
 
