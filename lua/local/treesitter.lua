@@ -1,32 +1,13 @@
-local opts = {
-    -- put the language you want in this array
-    -- ensure_installed = { "c_sharp", "lua", "markdown", "markdown_inline", "bash", "python" },
-
-    -- ensure_installed = "all", -- one of "all" or a list of languages
-    -- List of parsers to ignore installing
-    ignore_install = { "" },
-
-    -- install languages synchronously (only applied to `ensure_installed`)
-    sync_install = false,
-
+return {
+    ensure_installed = { "c_sharp", "lua", "markdown", "markdown_inline", "bash", "python" },
+    -- Autoinstall languages that are not installed
+    auto_install = true,
     highlight = {
-        enable = true,       -- false will disable the whole extension
-        disable = { }, -- list of language that will be disabled
-    },
-
-    autopairs = {
         enable = true,
+        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+        --    If you are experiencing weird indenting issues, add the language to
+        --    the list of additional_vim_regex_highlighting and disabled languages for indent.
+        additional_vim_regex_highlighting = { "ruby" },
     },
-
-    indent = { enable = true, disable = { "python", "css" } },
-
+    indent = { enable = true, disable = {  "python", "css", "ruby" } },
 }
-return opts
-
--- function M.config()
---     local configs = require "nvim-treesitter.configs"
---     configs.setup(setup)
--- end
--- return configs_setup
-
--- return M

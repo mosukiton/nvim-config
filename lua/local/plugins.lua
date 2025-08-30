@@ -73,21 +73,19 @@ local plugins = {
     },
 
     -- Treesitter
-    {
+    { -- Highlight, edit, and navigate code
         "nvim-treesitter/nvim-treesitter",
-        event = { "BufReadPost", "BufNewFile" },
-        cmd = { "TSInstall", "TSBufEnable", "TSBufDisable", "TSModuleInfo" },
         build = ":TSUpdate",
-        opts = function (plugin, opts)
-            opts = require "local.treesitter"
-            vim.opt.rtp:prepend(plugin.dir)
-            require("nvim-treesitter.configs").setup(opts)
-            vim.notify("treesitter config loaded")
-            -- return require"local.treesitter"
-            return opts
-        end,
+        main = "nvim-treesitter.configs", -- Sets main module to use for opts
+        -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+        opts = require "local.treesitter"
+        -- There are additional nvim-treesitter modules that you can use to interact
+        -- with nvim-treesitter. You should go explore a few and see what interests you:
+        --
+        --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+        --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
+        --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     },
-
     -- Autopairs
     {
         'windwp/nvim-autopairs',
