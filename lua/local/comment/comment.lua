@@ -1,4 +1,4 @@
-local opts = {
+return {
     ---Add a space b/w comment and the line
     padding = true,
     ---Whether the cursor should stay at its position
@@ -14,7 +14,7 @@ local opts = {
     },
     ---LHS of operator-pending mappings in NORMAL and VISUAL mode
     opleader = {
-        ---Line-comment keymap
+        -- -Line-comment keymap
         line = 'gc',
         ---Block-comment keymap
         block = 'gb',
@@ -41,5 +41,3 @@ local opts = {
     ---Function to call after (un)comment
     post_hook = nil,
 }
-
-return opts

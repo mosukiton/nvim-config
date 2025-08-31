@@ -14,55 +14,14 @@ vim.opt.rtp:prepend(lazypath)
 
 local plugins = {
     { "folke/lazy.nvim" },
-    { "nvim-lua/popup.nvim" },
     { "nvim-lua/plenary.nvim" },
     { "lukas-reineke/indent-blankline.nvim", main = "ibl", opts = {} },
-    -- { "Hoffs/omnisharp-extended-lsp.nvim" },
-    { "Issafalcon/lsp-overloads.nvim" },
 
     -- Colour schemes
     { "folke/tokyonight.nvim" },
 
-    -- cmp plugins
-    {
-        "hrsh7th/nvim-cmp", -- The completion plugin
-        dependencies = {
-            "hrsh7th/cmp-buffer", -- buffer completions
-            "hrsh7th/cmp-path", -- path completions
-            "hrsh7th/cmp-cmdline", -- cmdline completions
-            "saadparwaiz1/cmp_luasnip", -- snippet completions
-            "hrsh7th/cmp-nvim-lsp", -- lsp completions
-            "hrsh7th/cmp-nvim-lua", -- neovim lua completions
-        },
-        event = { "InsertEnter", "CmdlineEnter" },
-        setup = function()
-            return require "local.cmp"
-        end
-    },
-
-    -- snippets
-    {
-        "L3MON4D3/LuaSnip",
-        dependencies = { "rafamadriz/friendly-snippets" },
-        build = "make install_jsregexp",
-    },
-
     -- LSP
     -- simple to use language server installer
-    {
-        "mason-org/mason-lspconfig.nvim",
-        opts = require "local.lsp.mason-lspconfig",
-        dependencies = {
-            { "mason-org/mason.nvim", opts = require "local.lsp.mason" },
-            "neovim/nvim-lspconfig",
-        },
-    },
-    {
-        "seblyng/roslyn.nvim",
-        ft = "cs",
-        opts = require "local.lsp.settings.roslyn"
-    },
-
     {
         -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
         -- used for completion, annotations and signatures of Neovim apis
@@ -75,6 +34,36 @@ local plugins = {
             },
         },
     },
+    {
+        'neovim/nvim-lspconfig',
+        dependencies = {
+            -- Automatically install LSPs and related tools to stdpath for Neovim
+            -- Mason must be loaded before its dependents so we need to set it up here.
+            -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
+            { 'mason-org/mason.nvim', opts = {} },
+            'mason-org/mason-lspconfig.nvim',
+            'WhoIsSethDaniel/mason-tool-installer.nvim',
+
+            -- Useful status updates for LSP.
+            { 'j-hui/fidget.nvim', opts = {} },
+
+            -- Allows extra capabilities provided by blink.cmp
+            'saghen/blink.cmp',
+        },
+        config = require("local.lsp.init").config
+    },
+    {
+        "mason-org/mason-lspconfig.nvim",
+        opts = require "local.lsp.mason-lspconfig",
+        dependencies = {
+            { "mason-org/mason.nvim", opts = require "local.lsp.mason" },
+            "neovim/nvim-lspconfig",
+        },
+    },
+    {
+        "seblyng/roslyn.nvim",
+    },
+
     -- Telescope
     {
         "nvim-telescope/telescope.nvim",
@@ -84,42 +73,79 @@ local plugins = {
         },
     },
 
+    -- Autocompletion
+    {
+        'saghen/blink.cmp',
+        event = 'VimEnter',
+        version = '1.*',
+        dependencies = {
+            -- Snippet Engine
+            {
+                'L3MON4D3/LuaSnip',
+                version = '2.*',
+                build = (function()
+                    -- Build Step is needed for regex support in snippets.
+                    -- This step is not supported in many windows environments.
+                    -- Remove the below condition to re-enable on windows.
+                    if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
+                        return
+                    end
+                    return 'make install_jsregexp'
+                end)(),
+                dependencies = {
+                    -- `friendly-snippets` contains a variety of premade snippets.
+                    --        See the README about individual language/framework/plugin snippets:
+                    --        https://github.com/rafamadriz/friendly-snippets
+                    {
+                        'rafamadriz/friendly-snippets',
+                        config = function()
+                            require('luasnip.loaders.from_vscode').lazy_load()
+                        end,
+                    },
+                },
+                opts = {},
+            },
+            'folke/lazydev.nvim',
+        },
+        --- @module 'blink.cmp'
+        --- @type blink.cmp.Config
+        opts = require("local.blink-cmp"),
+    },
+    {
+        "ray-x/lsp_signature.nvim",
+        event = "InsertEnter",
+        opts = require("local.lsp.lsp_signature"),
+    },
+
     -- Treesitter
     { -- Highlight, edit, and navigate code
         "nvim-treesitter/nvim-treesitter",
+        branch = "main",
         build = ":TSUpdate",
-        main = "nvim-treesitter.configs", -- Sets main module to use for opts
-        -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
+        -- main = "nvim-treesitter.configs", -- Sets main module to use for opts
         opts = require "local.treesitter"
-        -- There are additional nvim-treesitter modules that you can use to interact
-        -- with nvim-treesitter. You should go explore a few and see what interests you:
-        --
-        --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-        --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-        --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     },
+
     -- Autopairs
     {
         'windwp/nvim-autopairs',
         event = "InsertEnter",
         -- config = true,
-        opts = function ()
-            return require "local.autopairs"
-	    end,
+        opts = require "local.autopairs",
     },
 
     -- Comments
     {
         "numToStr/Comment.nvim",
         opts = function ()
-            return require "local.comment.comment"
-        end,
+           return require("local.comment.comment")
+        end
     },
     {
         "JoosepAlviste/nvim-ts-context-commentstring",
         opts = function ()
-            return require "local.comment.ts-context"
-        end,
+           return require "local.comment.ts-context"
+        end
     },
 
     -- Project and Session Management
