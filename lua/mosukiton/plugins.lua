@@ -50,13 +50,13 @@ local plugins = {
             -- Allows extra capabilities provided by blink.cmp
             'saghen/blink.cmp',
         },
-        config = require("local.lsp.init").config
+        config = require("mosukiton.lsp.init").config
     },
     {
         "mason-org/mason-lspconfig.nvim",
-        opts = require "local.lsp.mason-lspconfig",
+        opts = require "mosukiton.lsp.mason-lspconfig",
         dependencies = {
-            { "mason-org/mason.nvim", opts = require "local.lsp.mason" },
+            { "mason-org/mason.nvim", opts = require "mosukiton.lsp.mason" },
             "neovim/nvim-lspconfig",
         },
     },
@@ -109,12 +109,12 @@ local plugins = {
         },
         --- @module 'blink.cmp'
         --- @type blink.cmp.Config
-        opts = require("local.blink-cmp"),
+        opts = require("mosukiton.blink-cmp"),
     },
     {
         "ray-x/lsp_signature.nvim",
         event = "InsertEnter",
-        opts = require("local.lsp.lsp_signature"),
+        opts = require("mosukiton.lsp.lsp_signature"),
     },
 
     -- Treesitter
@@ -123,7 +123,7 @@ local plugins = {
         branch = "main",
         build = ":TSUpdate",
         -- main = "nvim-treesitter.configs", -- Sets main module to use for opts
-        opts = require "local.treesitter"
+        opts = require "mosukiton.treesitter"
     },
 
     -- Autopairs
@@ -131,20 +131,20 @@ local plugins = {
         'windwp/nvim-autopairs',
         event = "InsertEnter",
         -- config = true,
-        opts = require "local.autopairs",
+        opts = require "mosukiton.autopairs",
     },
 
     -- Comments
     {
         "numToStr/Comment.nvim",
         opts = function ()
-           return require("local.comment.comment")
+           return require("mosukiton.comment.comment")
         end
     },
     {
         "JoosepAlviste/nvim-ts-context-commentstring",
         opts = function ()
-           return require "local.comment.ts-context"
+           return require "mosukiton.comment.ts-context"
         end
     },
 
@@ -185,7 +185,7 @@ local plugins = {
             { "echasnovski/mini.icons", opts = {} },
         },
         event = 'VimEnter', -- Sets the loading event to 'VimEnter'
-        opts = require "local.whichkey",
+        opts = require "mosukiton.whichkey",
     },
 }
 

@@ -10,14 +10,14 @@ local servers = {
     --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
     --  - settings (table): Override the default settings passed when initializing the server.
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
-    lua_ls = require "local.lsp.lspconfig.lua_ls",
-    -- roslyn_ls = require "local.lsp.lspconfig.roslyn",
+    lua_ls = require "mosukiton.lsp.lspconfig.lua_ls",
+    -- roslyn_ls = require "mosukiton.lsp.lspconfig.roslyn",
     pyright = {}, -- use lspconfig defaults
     clangd = {}, -- use lspconfig defaults
 }
 
 
--- require("local.lsp.handlers").setup()
+-- require("mosukiton.lsp.handlers").setup()
 --
 -- vim.lsp.config("roslyn", {
 --     settings = {
@@ -34,8 +34,8 @@ local servers = {
 
 
 M.config = function ()
-    require ("local.lsp.lsp_attach")
-    vim.diagnostic.config(require ("local.lsp.diagnostics-opts"))
+    require ("mosukiton.lsp.lsp_attach")
+    vim.diagnostic.config(require ("mosukiton.lsp.diagnostics-opts"))
 
     -- LSP servers and clients are able to communicate to each other what features they support.
     --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -76,7 +76,7 @@ M.config = function ()
 
     -- enable custom roslyn set up 
     fidget.notify("Setting up roslyn", vim.log.levels.INFO)
-    local roslyn = require("local.lsp.lspconfig.roslyn")
+    local roslyn = require("mosukiton.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)
     fidget.notify("Enabling up roslyn", vim.log.levels.INFO)
     vim.lsp.enable("roslyn")
