@@ -1,4 +1,12 @@
 return {
+    view = {
+        display_mode = "border",
+        header_lnum = true,  -- Auto-detect header (default)
+        sticky_header = {
+            enabled = true,
+            separator = "─",  -- Separator line character
+        },
+    },
     parser = {
         comments = { "#", "//" },
         delimiter = {
