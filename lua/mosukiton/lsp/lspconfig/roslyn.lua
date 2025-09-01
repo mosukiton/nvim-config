@@ -1,12 +1,27 @@
-return {
-    --  - cmd (table): Override the default command used to start the server
-    cmd = {
-        "/home/manu/.local/share/nvim/mason/bin/roslyn",
+-- cmd function stolen from roslyn.nvim
+local sysname = vim.uv.os_uname().sysname:lower()
+local iswin = not not (sysname:find("windows") or sysname:find("mingw"))
+
+local function get_default_cmd()
+    local roslyn_bin = iswin and "roslyn.cmd" or "roslyn"
+    local mason_bin = vim.fs.joinpath(vim.fn.stdpath("data"), "mason", "bin", roslyn_bin)
+
+    local exe = vim.fn.executable(mason_bin) == 1 and mason_bin
+        or vim.fn.executable(roslyn_bin) == 1 and roslyn_bin
+        or "Microsoft.CodeAnalysis.LanguageServer"
+
+    return {
+        exe,
         "--logLevel=Information",
-        "--telemetryLevel=off",
-        "--extensionLogDirectory=/home/manu/.local/state/nvim",
+        "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.log.get_filename()),
+        "--telemetryLevel=off", -- added telemetry off to futureproof in case it gets turned on by default later
         "--stdio"
-    },
+    }
+end
+
+local config = {
+    --  - cmd (table): Override the default command used to start the server
+    cmd = get_default_cmd(),
 
     --  - filetypes (table): Override the default list of associated filetypes for the server
     filetypes = { "cs" },
@@ -66,3 +81,5 @@ return {
         },
     },
 }
+
+return config
