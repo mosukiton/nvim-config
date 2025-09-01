@@ -187,6 +187,15 @@ local plugins = {
         event = 'VimEnter', -- Sets the loading event to 'VimEnter'
         opts = require "mosukiton.whichkey",
     },
+
+    -- CSV view
+    {
+        "hat0uma/csvview.nvim",
+        ---@module "csvview"
+        ---@type CsvView.Options
+        opts = require("mosukiton.csvview"),
+        cmd = { "CsvViewEnable", "CsvViewDisable", "CsvViewToggle" },
+    },
 }
 
 require("lazy").setup(plugins)
