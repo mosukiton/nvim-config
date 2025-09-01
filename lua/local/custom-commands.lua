@@ -14,7 +14,8 @@ vim.api.nvim_create_user_command("LspCapabilities", function()
 			end
 			table.sort(capAsList) -- sorts alphabetically
 			local msg = "# " .. client.name .. "\n" .. table.concat(capAsList, "\n")
-			vim.notify(msg, "trace", {
+            local fidget = require("fidget")
+			fidget.notify(msg, vim.log.levels.TRACE, {
 				on_open = function(win)
 					local buf = vim.api.nvim_win_get_buf(win)
 					-- vim.api.nvim_buf_set_option(buf, "filetype", "markdown")

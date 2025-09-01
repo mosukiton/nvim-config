@@ -43,9 +43,10 @@ M.config = function ()
     --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
     local ensure_installed = vim.tbl_keys(servers or {})
     -- require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+    local fidget = require("fidget")
 
     require('mason-lspconfig').setup {
-        vim.notify("setting up mason lspconfig");
+        fidget.notify("setting up mason lspconfig", vim.log.levels.INFO);
         ensure_installed = ensure_installed, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
         automatic_installation = {
             ensure_installed,
@@ -69,13 +70,15 @@ M.config = function ()
         server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
         require('lspconfig')[server_name].setup(server)
         if (server_name == 'roslyn') then
-            vim.notify("setting up " .. server_name);
+            fidget.notify("setting up " .. server_name, vim.log.levels.INFO);
         end
     end
 
     -- enable custom roslyn set up 
+    fidget.notify("Setting up roslyn", vim.log.levels.INFO)
     local roslyn = require("local.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)
+    fidget.notify("Enabling up roslyn", vim.log.levels.INFO)
     vim.lsp.enable("roslyn")
 end
 
