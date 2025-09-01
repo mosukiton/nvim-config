@@ -164,12 +164,26 @@ local plugins = {
         branch = "chad",
         -- cmd = "python3 -m chadtree deps"
     },
+    {
+        'stevearc/oil.nvim',
+        ---@module 'oil'
+        ---@type oil.SetupOpts
+        opts = {},
+        -- Optional dependencies
+        dependencies = { { "echasnovski/mini.icons", opts = {} } },
+        -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
+        -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+        lazy = false,
+    },
 
 
     -- Which-Key
     {
         -- Useful plugin to show you pending keybinds.
         'folke/which-key.nvim',
+        dependencies = {
+            { "echasnovski/mini.icons", opts = {} },
+        },
         event = 'VimEnter', -- Sets the loading event to 'VimEnter'
         opts = require "local.whichkey",
     },

@@ -28,7 +28,8 @@ keymap("n", "<C-j>", "<C-w>j", opts)
 keymap("n", "<C-k>", "<C-w>k", opts)
 keymap("n", "<C-l>", "<C-w>l", opts)
 
-keymap("n", "<leader>e", ":CHADopen<cr>", opts)
+-- keymap("n", "<leader>e", ":CHADopen<cr>", opts)
+keymap("n", "<leader>e", "<CMD>Oil --float<cr>", opts)
 
 -- Resize with arrows
 keymap("n", "<C-Up>", ":resize -2<CR>", opts)
@@ -75,14 +76,13 @@ keymap("t", "<C-j>", "<C-\\><C-N><C-w>j", term_opts)
 keymap("t", "<C-k>", "<C-\\><C-N><C-w>k", term_opts)
 keymap("t", "<C-l>", "<C-\\><C-N><C-w>l", term_opts)
 
-
 -- Telescope
 keymap("n", "<leader>f", "<cmd>lua require'telescope.builtin'.find_files(require('telescope.themes').get_dropdown({ previewer = false }))<cr>", opts)
 keymap("n", "<leader>st", "<cmd>Telescope live_grep<cr>", opts)
 keymap("n", "<leader>p", "<cmd>Telescope projections<cr>", opts)
 keymap("n", "<leader>o", ":lua require'telescope'.extensions.project.project{}<CR>", opts)
 
-
 -- Commenting
 keymap("n", "<leader>/", "gcc", { noremap = false, silent = true })
 keymap("v", "<leader>/", "gc", { noremap = false, silent = true })
+
