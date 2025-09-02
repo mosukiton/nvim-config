@@ -42,6 +42,11 @@ keymap("n", "<leader>bn", ":bnext<CR>", opts)
 keymap("n", "<leader>bb", ":bprevious<CR>", opts)
 keymap("n","<leader>c", "<cmd>bdelete<cr>", term_opts)
 
+-- Navigate tabs
+keymap("n", "<leader>ta", ":tabnew<CR>", opts)
+keymap("n", "<leader>tn", ":tabnext<CR>", opts)
+keymap("n", "<leader>tb", ":tabprevious<CR>", opts)
+
 -- Move text up and down
 keymap("n", "<A-j>", ":m .+1<CR>==", opts) -- vscode bindings taken from lunarvim
 keymap("n", "<A-k>", ":m .-2<CR>==", opts) -- vscode bindings taken from lunarvim
