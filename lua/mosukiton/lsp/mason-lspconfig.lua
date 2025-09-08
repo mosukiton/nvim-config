@@ -1,9 +1,4 @@
 return {
-    ensure_installed = {
-        -- "roslyn", -- TODO uncomment this when roslyn gets added to mason-lspconfig
-        "pyright",
-        "lua_ls",
-        "jsonls",
-    },
+    ensure_installed = vim.tbl_keys(require("mosukiton.lsp.servers") or {}),
     automatic_installation = true,
 }

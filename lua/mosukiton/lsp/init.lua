@@ -12,7 +12,7 @@ local servers = {
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     lua_ls = require "mosukiton.lsp.lspconfig.lua_ls",
     -- roslyn_ls = require "mosukiton.lsp.lspconfig.roslyn",
-    pyright = {}, -- use lspconfig defaults
+    basedpyright = {}, -- use lspconfig defaults
     clangd = {}, -- use lspconfig defaults
 }
 
