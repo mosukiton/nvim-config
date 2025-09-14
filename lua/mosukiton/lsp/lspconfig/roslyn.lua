@@ -36,7 +36,7 @@ local config = {
         -- - "auto": Does nothing for filewatching, leaving everything as default
         -- - "roslyn": Turns off neovim filewatching which will make roslyn do the filewatching
         -- - "off": Hack to turn off all filewatching. (Can be used if you notice performance issues)
-        filewatching = "roslyn",
+        filewatching = "auto",
 
         -- Optional function that takes an array of targets as the only argument. Return the target you
         -- want to use. If it returns `nil`, then it falls back to guessing the target like normal

@@ -11,27 +11,9 @@ local servers = {
     --  - settings (table): Override the default settings passed when initializing the server.
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     lua_ls = require "mosukiton.lsp.lspconfig.lua_ls",
-    -- roslyn_ls = require "mosukiton.lsp.lspconfig.roslyn",
     basedpyright = {}, -- use lspconfig defaults
     clangd = {}, -- use lspconfig defaults
 }
-
-
--- require("mosukiton.lsp.handlers").setup()
---
--- vim.lsp.config("roslyn", {
---     settings = {
---         ["csharp|inlay_hints"] = {
---             csharp_enable_inlay_hints_for_implicit_object_creation = true,
---             csharp_enable_inlay_hints_for_implicit_variable_types = true,
---         },
---         ["csharp|code_lens"] = {
---             dotnet_enable_references_code_lens = true,
---         },
---     },
--- })
--- vim.lsp.enable("roslyn")
-
 
 M.config = function ()
     require ("mosukiton.lsp.lsp_attach")
@@ -48,17 +30,8 @@ M.config = function ()
     require('mason-lspconfig').setup {
         fidget.notify("setting up mason lspconfig", vim.log.levels.INFO);
         ensure_installed = ensure_installed, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = {
-            ensure_installed,
-            exclude = {
-                "roslyn"
-            }
-        },
+        automatic_installation = { ensure_installed },
     }
-
-    -- vim.list_extend(ensure_installed, {
-    --     'stylua', -- Used to format Lua code
-    -- })
 
     local capabilities = require('blink.cmp').get_lsp_capabilities()
 
@@ -74,7 +47,7 @@ M.config = function ()
         end
     end
 
-    -- enable custom roslyn set up 
+    -- enable custom roslyn set up since its not been made a part of mason-lspconfig yet.
     fidget.notify("Setting up roslyn", vim.log.levels.INFO)
     local roslyn = require("mosukiton.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)

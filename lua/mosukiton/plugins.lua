@@ -191,8 +191,6 @@ local plugins = {
     -- CSV view
     {
         "hat0uma/csvview.nvim",
-        ---@module "csvview"
-        ---@type CsvView.Options
         opts = require("mosukiton.csvview"),
         cmd = { "CsvViewEnable", "CsvViewDisable", "CsvViewToggle" },
     },

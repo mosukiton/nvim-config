@@ -1,5 +1,8 @@
+--- @module 'blink.cmp'
+--- @type blink.cmp.Config
 return {
     keymap = {
+
         -- 'default' (recommended) for mappings similar to built-in completions
         --     <c-y> to accept ([y]es) the completion.
         --        This will auto-import if your LSP supports it.
@@ -36,11 +39,11 @@ return {
     completion = {
         -- By default, you may press `<c-space>` to show the documentation.
         -- Optionally, set `auto_show = true` to show the documentation after a delay.
-        documentation = { auto_show = false, auto_show_delay_ms = 500 },
+        documentation = { auto_show = true, auto_show_delay_ms = 500 },
     },
 
     sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        default = { 'lsp', 'path', 'snippets', 'buffer', 'lazydev' },
         providers = {
             lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
         },

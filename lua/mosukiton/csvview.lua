@@ -1,3 +1,5 @@
+---@module "csvview"
+---@type CsvView.Options
 return {
     view = {
         display_mode = "border",
