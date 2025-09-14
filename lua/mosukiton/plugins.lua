@@ -194,6 +194,9 @@ local plugins = {
         opts = require("mosukiton.csvview"),
         cmd = { "CsvViewEnable", "CsvViewDisable", "CsvViewToggle" },
     },
+
+    -- mini setup
+    { 'nvim-mini/mini.bufremove', version = false, opts = {} },
 }
 
 require("lazy").setup(plugins)
