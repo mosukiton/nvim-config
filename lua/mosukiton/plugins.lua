@@ -197,6 +197,15 @@ local plugins = {
 
     -- mini setup
     { 'nvim-mini/mini.bufremove', version = false, opts = {} },
+
+    -- snacks
+    {
+        "folke/snacks.nvim",
+        opts = {
+            ---@type snacks.pick.Config
+            picker = require("mosukiton.snacks.picker")
+        },
+    },
 }
 
 require("lazy").setup(plugins)
