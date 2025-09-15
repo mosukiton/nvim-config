@@ -45,7 +45,7 @@ keymap("n","<leader>c", "<cmd>lua MiniBufremove.delete()<cr>", term_opts)
 -- Navigate tabs
 keymap("n", "<leader>ta", ":tabnew<CR>", opts)
 keymap("n", "<leader>tn", ":tabnext<CR>", opts)
-keymap("n", "<leader>tb", ":tabprevious<CR>", opts)
+keymap("n", "<leader>tp", ":tabprevious<CR>", opts)
 
 -- Move text up and down
 keymap("n", "<A-j>", ":m .+1<CR>==", opts) -- vscode bindings taken from lunarvim
