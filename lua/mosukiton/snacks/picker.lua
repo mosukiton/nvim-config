@@ -47,6 +47,22 @@
 local config = {
     prompt = " ",
     sources = {},
+    exclude = {
+        ".git",
+        "node_modules",
+        "bin",
+        "obj",
+        ".vs",
+        ".idea",
+        "TestResults",
+        "**/BettingEngine/Resources",
+        "**\\BettingEngine\\Resources",
+        "**/BettingEngine/Resources/**",
+        "**\\BettingEngine\\Resources\\**",
+        "Resources/**",
+        -- "Resources\\**",
+        -- "Resources",
+    },
     focus = "input",
     layout = {
         cycle = true,
