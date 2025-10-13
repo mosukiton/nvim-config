@@ -41,7 +41,7 @@ M.config = function ()
         -- by the server configuration above. Useful when disabling
         -- certain features of an LSP (for example, turning off formatting for ts_ls)
         server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-        require('lspconfig')[server_name].setup(server)
+        vim.lsp.config(server_name, server)
         if (server_name == 'roslyn') then
             fidget.notify("setting up " .. server_name, vim.log.levels.INFO);
         end
