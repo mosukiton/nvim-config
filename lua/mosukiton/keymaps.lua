@@ -30,6 +30,7 @@ keymap("n", "<C-l>", "<C-w>l", opts)
 
 -- keymap("n", "<leader>e", ":CHADopen<cr>", opts)
 keymap("n", "<leader>e", "<CMD>Oil --float<cr>", opts)
+keymap("n", "<leader>e", "<CMD>Fyler<cr>", opts)
 
 -- Resize with arrows
 keymap("n", "<C-Up>", ":resize -2<CR>", opts)
