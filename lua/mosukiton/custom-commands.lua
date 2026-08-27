@@ -27,3 +27,57 @@ vim.api.nvim_create_user_command("LspCapabilities", function()
 		end
 	end
 end, {})
+
+-- JsonMinifyDepth
+local function json_minify_depth(depth)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local input = table.concat(lines, "\n")
+
+  local jq_filter = string.format([[
+    def compact(n):
+      if n >= %d then
+        tostring
+      elif type == "object" then
+        with_entries(.value |= compact(n + 1))
+      elif type == "array" then
+        map(compact(n + 1))
+      else
+        .
+      end;
+
+    compact(0)
+  ]], depth)
+
+  local output = vim.fn.system({
+    "jq",
+    "--indent", "2",
+    jq_filter,
+  }, input)
+
+  if vim.v.shell_error ~= 0 then
+    vim.notify("JsonMinifyDepth: invalid JSON or jq error", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.api.nvim_buf_set_lines(
+    0,
+    0,
+    -1,
+    false,
+    vim.split(output, "\n", { trimempty = true })
+  )
+end
+
+vim.api.nvim_create_user_command("JsonMinifyDepth", function(opts)
+  local depth = tonumber(opts.args)
+
+  if not depth or depth < 0 then
+    vim.notify("Usage: :JsonMinifyDepth <depth>", vim.log.levels.ERROR)
+    return
+  end
+
+  json_minify_depth(depth)
+end, {
+  nargs = 1,
+})
+
