@@ -28,27 +28,38 @@ vim.api.nvim_create_user_command("LspCapabilities", function()
 	end
 end, {})
 
---JsonMinifyDepth
-local function is_json_container_start(char)
-  return char == "{" or char == "["
-end
-
-
--- Find the first complete JSON object/array inside a range of lines.
+-- Find the first valid JSON object/array inside a range of lines.
 --
 -- Returns:
 --   start_line, start_col, end_line, end_col
 --
 -- All positions are 0-based and end_col is exclusive.
+local function get_range_text(lines, start_line, start_col, end_line, end_col)
+  local parts = {}
+
+  if start_line == end_line then
+    return lines[start_line + 1]:sub(start_col + 1, end_col)
+  end
+
+  parts[1] = lines[start_line + 1]:sub(start_col + 1)
+
+  for line_idx = start_line + 2, end_line do
+    table.insert(parts, lines[line_idx])
+  end
+
+  table.insert(parts, lines[end_line + 1]:sub(1, end_col))
+
+  return table.concat(parts, "\n")
+end
+
 local function find_first_json_container(lines)
   local in_string = false
   local escaped = false
   local stack = {}
-
-  local start_line = nil
-  local start_col = nil
+  local candidates = {}
 
   for line_idx, line in ipairs(lines) do
+    local zero_based_line = line_idx - 1
     local i = 1
 
     while i <= #line do
@@ -74,30 +85,29 @@ local function find_first_json_container(lines)
       end
 
       if char == "{" or char == "[" then
-        -- Only start looking for a candidate when we're not
-        -- already inside another container.
-        if #stack == 0 then
-          start_line = line_idx
-          start_col = i - 1
-        end
-
-        table.insert(stack, char)
+        table.insert(stack, {
+          char = char,
+          line = zero_based_line,
+          col = i - 1,
+        })
 
       elseif char == "}" or char == "]" then
         if #stack > 0 then
-          local expected = stack[#stack] == "{" and "}" or "]"
+          local opener = stack[#stack]
+          local expected = opener.char == "{" and "}" or "]"
 
-          if char ~= expected then
-            -- Invalid/mismatched container. Reset and keep scanning.
-            stack = {}
-            start_line = nil
-            start_col = nil
-          else
+          if char == expected then
             table.remove(stack)
-
-            if #stack == 0 and start_line ~= nil then
-              return start_line, start_col, line_idx, i
-            end
+            table.insert(candidates, {
+              start_line = opener.line,
+              start_col = opener.col,
+              end_line = zero_based_line,
+              end_col = i,
+            })
+          else
+            -- Discard only the mismatched opener so a valid nested
+            -- container or a later candidate can still be found.
+            table.remove(stack)
           end
         end
       end
@@ -105,6 +115,40 @@ local function find_first_json_container(lines)
       i = i + 1
 
       ::continue::
+    end
+
+    -- Raw newlines are not valid inside JSON strings. Reset the string
+    -- state so malformed text cannot hide a later valid container.
+    if in_string then
+      in_string = false
+      escaped = false
+    end
+  end
+
+  -- Prefer the earliest candidate, then verify that it is actually JSON.
+  -- Balanced delimiters alone are not enough (for example, "{not JSON}").
+  table.sort(candidates, function(a, b)
+    if a.start_line == b.start_line then
+      return a.start_col < b.start_col
+    end
+    return a.start_line < b.start_line
+  end)
+
+  for _, candidate in ipairs(candidates) do
+    local input = get_range_text(
+      lines,
+      candidate.start_line,
+      candidate.start_col,
+      candidate.end_line,
+      candidate.end_col
+    )
+    local ok = pcall(vim.json.decode, input)
+
+    if ok then
+      return candidate.start_line,
+        candidate.start_col,
+        candidate.end_line,
+        candidate.end_col
     end
   end
 
@@ -118,23 +162,7 @@ local function format_json(data, depth)
       return false
     end
 
-    local max = 0
-
-    for k, _ in pairs(t) do
-      if type(k) ~= "number" then
-        return false
-      end
-
-      max = math.max(max, k)
-    end
-
-    for i = 1, max do
-      if t[i] == nil then
-        return false
-      end
-    end
-
-    return true
+    return vim.islist(t)
   end
 
   local function encode(value, current_depth)
@@ -221,13 +249,13 @@ local function replace_json_container(
     false
   )
 
-  -- Include the final line and trim it to the exact JSON range.
-  lines[#lines] = lines[#lines]:sub(1, end_col)
-
-  -- Trim the beginning of the first line.
-  lines[1] = lines[1]:sub(start_col + 1)
-
-  local input = table.concat(lines, "\n")
+  local input = get_range_text(
+    lines,
+    0,
+    start_col,
+    #lines - 1,
+    end_col
+  )
 
   local ok, data = pcall(vim.json.decode, input)
 
@@ -380,7 +408,7 @@ end
 vim.api.nvim_create_user_command("JsonMinifyDepth", function(opts)
   local depth = tonumber(opts.args)
 
-  if not depth or depth < 0 then
+  if not depth or depth ~= depth or depth == math.huge or depth < 0 then
     vim.notify(
       "Usage: :JsonMinifyDepth <depth>",
       vim.log.levels.ERROR
