@@ -156,7 +156,66 @@ local function find_first_json_container(lines)
 end
 
 
-local function format_json(data, depth)
+local function get_line_indent(line)
+  return line:match("^[ \t]*") or ""
+end
+
+local function get_json_depth(lines, target_line, target_col)
+  local stack = {}
+  local in_string = false
+  local escaped = false
+
+  for line_idx, line in ipairs(lines) do
+    local zero_based_line = line_idx - 1
+    local end_col = #line
+
+    if zero_based_line == target_line then
+      -- target_col points at the opening delimiter. Only count
+      -- containers that surround it.
+      end_col = target_col
+    end
+
+    for i = 1, end_col do
+      local char = line:sub(i, i)
+
+      if in_string then
+        if escaped then
+          escaped = false
+        elseif char == "\\" then
+          escaped = true
+        elseif char == '"' then
+          in_string = false
+        end
+      elseif char == '"' then
+        in_string = true
+      elseif char == "{" or char == "[" then
+        table.insert(stack, char)
+      elseif char == "}" or char == "]" then
+        local opener = stack[#stack]
+        local expected = opener == "{" and "}" or "]"
+
+        if opener and char == expected then
+          table.remove(stack)
+        end
+      end
+    end
+
+    if zero_based_line == target_line then
+      break
+    end
+
+    -- Raw newlines are not valid inside JSON strings.
+    in_string = false
+    escaped = false
+  end
+
+  return #stack
+end
+
+local function format_json(data, depth, initial_depth, initial_indent)
+  initial_depth = initial_depth or 0
+  initial_indent = initial_indent or ""
+
   local function is_array(t)
     if type(t) ~= "table" then
       return false
@@ -165,7 +224,7 @@ local function format_json(data, depth)
     return vim.islist(t)
   end
 
-  local function encode(value, current_depth)
+  local function encode(value, current_depth, current_indent)
     -- Scalars are always normal JSON.
     if type(value) ~= "table" then
       return vim.json.encode(value)
@@ -177,14 +236,14 @@ local function format_json(data, depth)
     end
 
     local parts = {}
-    local indent = string.rep("  ", current_depth)
-    local child_indent = string.rep("  ", current_depth + 1)
+    local indent = current_indent
+    local child_indent = current_indent .. "  "
 
     if is_array(value) then
       for i = 1, #value do
         table.insert(
           parts,
-          encode(value[i], current_depth + 1)
+          encode(value[i], current_depth + 1, child_indent)
         )
       end
 
@@ -213,7 +272,7 @@ local function format_json(data, depth)
         parts,
         vim.json.encode(key)
           .. ": "
-          .. encode(value[key], current_depth + 1)
+          .. encode(value[key], current_depth + 1, child_indent)
       )
     end
 
@@ -229,7 +288,7 @@ local function format_json(data, depth)
       .. "}"
   end
 
-  return encode(data, 0)
+  return encode(data, initial_depth, initial_indent)
 end
 
 
@@ -267,7 +326,23 @@ local function replace_json_container(
     return false
   end
 
-  local output = format_json(data, depth)
+  local all_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local original_start = all_lines[start_line + 1]
+  local initial_indent = get_line_indent(original_start)
+  local initial_depth = get_json_depth(all_lines, start_line, start_col)
+
+  -- A standalone fragment may not have enough surrounding JSON for the
+  -- parser above to determine its depth. Use its existing indentation then.
+  if initial_depth == 0 and #initial_indent > 0 then
+    initial_depth = math.floor(#initial_indent / 2)
+  end
+
+  local output = format_json(
+    data,
+    depth,
+    initial_depth,
+    initial_indent
+  )
 
   local replacement = vim.split(
     output,
@@ -277,13 +352,6 @@ local function replace_json_container(
 
   -- Get the original first/final lines so we can preserve
   -- everything outside the JSON container.
-  local original_start = vim.api.nvim_buf_get_lines(
-    buf,
-    start_line,
-    start_line + 1,
-    false
-  )[1]
-
   local original_end = vim.api.nvim_buf_get_lines(
     buf,
     end_line,
@@ -359,7 +427,31 @@ local function json_minify_depth(depth, start_line, end_line, explicit_range)
   local ok, data = pcall(vim.json.decode, input)
 
   if ok then
-    local output = format_json(data, depth)
+    local original_start = vim.api.nvim_buf_get_lines(
+      buf,
+      start_line,
+      start_line + 1,
+      false
+    )[1]
+    local initial_indent = get_line_indent(original_start)
+    local all_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local initial_depth = get_json_depth(
+      all_lines,
+      start_line,
+      #initial_indent
+    )
+
+    if initial_depth == 0 and #initial_indent > 0 then
+      initial_depth = math.floor(#initial_indent / 2)
+    end
+
+    local output = initial_indent
+      .. format_json(
+        data,
+        depth,
+        initial_depth,
+        initial_indent
+      )
 
     vim.api.nvim_buf_set_lines(
       buf,
