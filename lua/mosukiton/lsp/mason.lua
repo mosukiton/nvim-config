@@ -9,8 +9,6 @@ return {
     },
     log_level = vim.log.levels.INFO,
     max_concurrent_installers = 4,
-    registries = {
-        "github:mason-org/mason-registry",
-        "github:Crashdummyy/mason-registry",
-    }
+    -- Roslyn is installed as the cross-platform .NET global tool
+    -- `roslyn-language-server`, so Mason does not need a custom registry.
 }

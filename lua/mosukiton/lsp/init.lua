@@ -1,5 +1,6 @@
 local M = {}
 
+---@type table<string, vim.lsp.Config>
 local servers = {
     -- Enable the following language servers
     --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -15,7 +16,8 @@ local servers = {
     clangd = {}, -- use lspconfig defaults
 }
 
-M.config = function ()
+---@return nil
+M.config = function()
     require ("mosukiton.lsp.lsp_attach")
     vim.diagnostic.config(require ("mosukiton.lsp.diagnostics-opts"))
 
@@ -23,15 +25,14 @@ M.config = function ()
     --  By default, Neovim doesn't support everything that is in the LSP specification.
     --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
     --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
-    local ensure_installed = vim.tbl_keys(servers or {})
-    -- require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-    local fidget = require("fidget")
+    ---@type string[]
+    local ensure_installed = vim.tbl_keys(servers)
 
-    require('mason-lspconfig').setup {
-        fidget.notify("setting up mason lspconfig", vim.log.levels.INFO);
-        ensure_installed = ensure_installed, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-        automatic_installation = { ensure_installed },
-    }
+    -- Mason manages these servers. Roslyn is intentionally excluded because
+    -- it is installed as the cross-platform .NET global tool.
+    require("mason-lspconfig").setup({
+        ensure_installed = ensure_installed,
+    })
 
     local capabilities = require('blink.cmp').get_lsp_capabilities()
 
@@ -42,17 +43,12 @@ M.config = function ()
         -- certain features of an LSP (for example, turning off formatting for ts_ls)
         server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
         vim.lsp.config(server_name, server)
-        if (server_name == 'roslyn') then
-            fidget.notify("setting up " .. server_name, vim.log.levels.INFO);
-        end
     end
 
-    -- enable custom roslyn set up since its not been made a part of mason-lspconfig yet.
-    fidget.notify("Setting up roslyn", vim.log.levels.INFO)
+    -- Apply the custom command and C# settings before roslyn.nvim enables
+    -- its `roslyn` client. The plugin itself owns the enablement lifecycle.
     local roslyn = require("mosukiton.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)
-    fidget.notify("Enabling up roslyn", vim.log.levels.INFO)
-    vim.lsp.enable("roslyn")
 end
 
 return M

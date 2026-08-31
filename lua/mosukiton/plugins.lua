@@ -62,6 +62,18 @@ local plugins = {
     },
     {
         "seblyng/roslyn.nvim",
+        -- Keep roslyn.nvim's solution selection and source-generated-file support,
+        -- while its LSP command is supplied by the .NET global tool below.
+        dependencies = {
+            "neovim/nvim-lspconfig",
+        },
+        ---@module 'roslyn.config'
+        ---@type RoslynNvimConfig
+        opts = {
+            -- These are roslyn.nvim options, not LSP initialization settings.
+            filewatching = "auto",
+            lock_target = true,
+        },
     },
 
     -- Telescope
