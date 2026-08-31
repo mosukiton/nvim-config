@@ -6,7 +6,7 @@ local function get_roslyn_cmd()
         "roslyn-language-server",
         "--logLevel=Information",
         "--extensionLogDirectory=" .. vim.fs.dirname(vim.lsp.log.get_filename()),
-        "--telemetryLevel=off",
+        "--telemetryLevel=off", -- added telemetry off to futureproof in case it gets turned on by default later
         "--stdio",
     }
 end
@@ -18,11 +18,10 @@ local config = {
     -- The .NET global-tools directory must be on PATH.
     cmd = get_roslyn_cmd(),
 
-    -- roslyn.nvim supplies solution selection and source-generated-file support.
+    -- Overrides for the `roslyn` server registered by roslyn.nvim (not `roslyn_ls`).
     filetypes = { "cs" },
 
-    -- `settings` is sent to Roslyn during LSP initialization. Plugin-only
-    -- options such as file watching and target locking live in plugins.lua.
+    -- Sent to Roslyn during LSP initialization. Plugin-only options live in plugins.lua.
     settings = {
         ["csharp|inlay_hints"] = {
             csharp_enable_inlay_hints_for_implicit_object_creation = true,

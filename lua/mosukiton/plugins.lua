@@ -61,16 +61,19 @@ local plugins = {
         },
     },
     {
+        -- Still required: nvim-lspconfig's `roslyn_ls` only covers basic attach/init.
+        -- roslyn.nvim adds multi-solution selection (`:Roslyn target`), source-generated
+        -- file buffers, Roslyn-specific handlers/commands, and plugin options such as
+        -- `lock_target` / `filewatching`. Our `mosukiton.lsp.lspconfig.roslyn` module
+        -- only overrides the server command and C# `settings`; the plugin owns the rest.
         "seblyng/roslyn.nvim",
-        -- Keep roslyn.nvim's solution selection and source-generated-file support,
-        -- while its LSP command is supplied by the .NET global tool below.
         dependencies = {
             "neovim/nvim-lspconfig",
         },
         ---@module 'roslyn.config'
         ---@type RoslynNvimConfig
         opts = {
-            -- These are roslyn.nvim options, not LSP initialization settings.
+            -- Plugin-only options (not sent as LSP initialization settings).
             filewatching = "auto",
             lock_target = true,
         },

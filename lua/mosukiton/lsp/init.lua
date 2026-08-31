@@ -45,8 +45,9 @@ M.config = function()
         vim.lsp.config(server_name, server)
     end
 
-    -- Apply the custom command and C# settings before roslyn.nvim enables
-    -- its `roslyn` client. The plugin itself owns the enablement lifecycle.
+    -- Merge our command/settings into roslyn.nvim's `roslyn` server config.
+    -- The plugin enables the client and supplies root_dir, on_init, handlers, and
+    -- commands; without the plugin, only the minimal `roslyn_ls` config exists.
     local roslyn = require("mosukiton.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)
 end
