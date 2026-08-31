@@ -1,53 +1,63 @@
+local roslyn_auto_insert_group = vim.api.nvim_create_augroup("roslyn-auto-insert", { clear = true })
+
 vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)
     local client = vim.lsp.get_client_by_id(args.data.client_id)
     local bufnr = args.buf
 
-    if client and (client.name == "roslyn" or client.name == "roslyn_ls") then
-      vim.api.nvim_create_autocmd("InsertCharPre", {
-        desc = "Roslyn: Trigger an auto insert on '/'.",
-        buffer = bufnr,
-        callback = function()
-          local char = vim.v.char
-
-          if char ~= "/" then
-            return
-          end
-
-          local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-          row, col = row - 1, col + 1
-          local uri = vim.uri_from_bufnr(bufnr)
-
-          local params = {
-            _vs_textDocument = { uri = uri },
-            _vs_position = { line = row, character = col },
-            _vs_ch = char,
-            _vs_options = {
-              tabSize = vim.bo[bufnr].tabstop,
-              insertSpaces = vim.bo[bufnr].expandtab,
-            },
-          }
-
-          -- NOTE: We should send textDocument/_vs_onAutoInsert request only after
-          -- buffer has changed.
-          vim.defer_fn(function()
-            client:request(
-              ---@diagnostic disable-next-line: param-type-mismatch
-              "textDocument/_vs_onAutoInsert",
-              params,
-              function(err, result, _)
-                if err or not result then
-                  return
-                end
-
-                vim.snippet.expand(result._vs_textEdit.newText)
-              end,
-              bufnr
-            )
-          end, 1)
-        end,
-      })
+    if not client or (client.name ~= "roslyn" and client.name ~= "roslyn_ls") then
+      return
     end
+
+    -- Recreate the buffer-local handler on every attach so a restarted
+    -- client replaces the old closure instead of adding a duplicate.
+    vim.api.nvim_clear_autocmds({ group = roslyn_auto_insert_group, buffer = bufnr })
+    vim.api.nvim_create_autocmd("InsertCharPre", {
+      desc = "Roslyn: Trigger an auto insert on '/'.",
+      group = roslyn_auto_insert_group,
+      buffer = bufnr,
+      callback = function()
+        local char = vim.v.char
+
+        if char ~= "/" then
+          return
+        end
+
+        local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+        row = row - 1
+        local character = vim.lsp.util.character_offset(bufnr, row, col, client.offset_encoding) + 1
+        local uri = vim.uri_from_bufnr(bufnr)
+
+        local params = {
+          _vs_textDocument = { uri = uri },
+          _vs_position = { line = row, character = character },
+          _vs_ch = char,
+          _vs_options = {
+            tabSize = vim.bo[bufnr].tabstop,
+            insertSpaces = vim.bo[bufnr].expandtab,
+          },
+        }
+
+        -- InsertCharPre runs before the slash is inserted. Defer the request
+        -- so Roslyn sees the changed buffer before returning an edit.
+        vim.defer_fn(function()
+          client:request(
+            ---@diagnostic disable-next-line: param-type-mismatch
+            "textDocument/_vs_onAutoInsert",
+            params,
+            function(err, result, _)
+              local text_edit = result and result._vs_textEdit
+              if err or not text_edit or not text_edit.newText then
+                return
+              end
+
+              vim.snippet.expand(text_edit.newText)
+            end,
+            bufnr
+          )
+        end, 1)
+      end,
+    })
   end,
 })
 
