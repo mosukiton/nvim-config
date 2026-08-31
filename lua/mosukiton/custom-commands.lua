@@ -320,7 +320,7 @@ local function replace_json_container(
 
   if not ok then
     vim.notify(
-      "JsonMinifyDepth: found container is not valid JSON",
+      "JsonCompactDepth: found container is not valid JSON",
       vim.log.levels.ERROR
     )
     return false
@@ -377,7 +377,7 @@ local function replace_json_container(
 end
 
 
-local function json_minify_depth(depth, start_line, end_line, explicit_range)
+local function json_compact_depth(depth, start_line, end_line, explicit_range)
   local buf = vim.api.nvim_get_current_buf()
 
   -- Whole-buffer behavior remains unchanged.
@@ -395,7 +395,7 @@ local function json_minify_depth(depth, start_line, end_line, explicit_range)
 
     if not ok then
       vim.notify(
-        "JsonMinifyDepth: invalid JSON",
+        "JsonCompactDepth: invalid JSON",
         vim.log.levels.ERROR
       )
       return
@@ -474,7 +474,7 @@ local function json_minify_depth(depth, start_line, end_line, explicit_range)
 
   if not found_start_line then
     vim.notify(
-      "JsonMinifyDepth: no valid JSON object/array found in selection",
+      "JsonCompactDepth: no valid JSON object/array found in selection",
       vim.log.levels.ERROR
     )
     return
@@ -497,26 +497,26 @@ local function json_minify_depth(depth, start_line, end_line, explicit_range)
 end
 
 
-vim.api.nvim_create_user_command("JsonMinifyDepth", function(opts)
+vim.api.nvim_create_user_command("JsonCompactDepth", function(opts)
   local depth = tonumber(opts.args)
 
   if not depth or depth ~= depth or depth == math.huge or depth < 0 then
     vim.notify(
-      "Usage: :JsonMinifyDepth <depth>",
+      "Usage: :JsonCompactDepth <depth>",
       vim.log.levels.ERROR
     )
     return
   end
 
   if opts.range == 0 then
-    json_minify_depth(
+    json_compact_depth(
       depth,
       0,
       vim.api.nvim_buf_line_count(0),
       false
     )
   else
-    json_minify_depth(
+    json_compact_depth(
       depth,
       opts.line1 - 1,
       opts.line2,
