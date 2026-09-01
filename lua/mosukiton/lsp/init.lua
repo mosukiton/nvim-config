@@ -18,6 +18,9 @@ local servers = {
 
 ---@return nil
 M.config = function()
+    require("mosukiton.lsp.roslyn_debug").configure_lsp_logging()
+    require("mosukiton.lsp.roslyn_debug").setup_commands()
+
     require ("mosukiton.lsp.lsp_attach")
     vim.diagnostic.config(require ("mosukiton.lsp.diagnostics-opts"))
 
@@ -50,6 +53,7 @@ M.config = function()
     -- commands; without the plugin, only the minimal `roslyn_ls` config exists.
     local roslyn = require("mosukiton.lsp.lspconfig.roslyn")
     vim.lsp.config("roslyn", roslyn)
+    require("mosukiton.lsp.roslyn_solution_diagnostics").setup()
 end
 
 return M

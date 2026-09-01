@@ -74,7 +74,7 @@ local plugins = {
         ---@type RoslynNvimConfig
         opts = {
             -- Plugin-only options (not sent as LSP initialization settings).
-            filewatching = "auto",
+            filewatching = "roslyn",
             lock_target = true,
         },
     },

@@ -37,6 +37,9 @@ vim.g.have_nerd_font = true
 vim.opt.iskeyword:append { "-" }
 vim.opt.shortmess:append "c"
 
+-- Set to true (or export ROSLYN_DEBUG=1) for verbose Roslyn/LSP logging.
+vim.g.roslyn_debug = false
+
 -- for k, v in pairs(options) do
 --     vim.opt[k] = v
 -- end
