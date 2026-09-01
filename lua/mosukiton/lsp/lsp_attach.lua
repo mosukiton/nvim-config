@@ -53,7 +53,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
         -- map('<leader>lj', vim.diagnostic.goto_next, '[G]oto Next Diagnostic')
         map('<leader>lj', '<cmd>lua vim.diagnostic.jump({count=1, float=true})<CR>', '[G]oto Next Diagnostic')
         -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<leader>lj", '<cmd>lua vim.diagnostic.goto_next({ border = "rounded" })<CR>', opts)
-        map('<leader>lb', vim.diagnostic.setloclist, 'Buffer Diagnostics [L]ist')
+        map('<leader>lb', vim.diagnostic.setloclist, '[B]uffer Diagnostics List')
         -- vim.api.nvim_buf_set_keymap(bufnr, "n", "<leader>q", "<cmd>lua vim.diagnostic.setloclist()<CR>", opts)
         -- vim.cmd [[ command! Format execute 'lua vim.lsp.buf.formatting()' ]]
 
