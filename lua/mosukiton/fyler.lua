@@ -1,97 +1,60 @@
 return {
-    -- Close explorer when file is selected
-    close_on_select = true,
-    -- Auto-confirm simple file operations
-    confirm_simple = false,
-    -- Replace netrw as default explorer
-    default_explorer = false,
+    auto_confirm_simple_mutation = false,
+    use_as_default_explorer = false,
+    follow_current_file = true,
+    kind = "floating",
 
-    -- Git integration
-    git_status = {
-        enabled = true,
-        symbols = {
-            Untracked = "?",
-            Added = "+",
-            Modified = "*",
-            Deleted = "x",
-            Renamed = ">",
-            Copied = "~",
-            Conflict = "!",
-            Ignored = "#",
+    extensions = {
+        git = {
+            enabled = true,
+            icons = {
+                [" M"] = { icon = "*", hl = "FylerGitModified" },
+                ["M "] = { icon = "+", hl = "FylerGitStaged" },
+                ["MM"] = { icon = "+", hl = "FylerGitStaged" },
+                ["??"] = { icon = "?", hl = "FylerGitUntracked" },
+                [" D"] = { icon = "x", hl = "FylerGitDeleted" },
+                ["D "] = { icon = "x", hl = "FylerGitStaged" },
+                ["R "] = { icon = ">", hl = "FylerGitRenamed" },
+                ["UU"] = { icon = "!", hl = "FylerGitConflict" },
+                ["!!"] = { icon = "#", hl = "FylerGitIgnored" },
+            },
         },
     },
 
-    hooks = {
-        -- function(path) end
-        on_delete = nil,
-        -- function(src_path, dst_path) end
-        on_rename = nil,
-        -- function(hl_groups, palette) end
-        on_highlight = nil,
+    integrations = {
+        icon = "mini_icons",
     },
 
-    -- Directory icons
-    icon = {
-        directory_collapsed = nil,
-        directory_empty = nil,
-        directory_expanded = nil,
+    ui = {
+        indent_guides = true,
     },
 
-    -- Icon provider (none, mini_icons or nvim_web_devicons)
-    icon_provider = "mini_icons",
-
-    -- Indentation guides
-    indentscope = {
-        enabled = true,
-        group = "FylerIndentMarker",
-        marker = "│",
+    kind_presets = {
+        floating = {
+            border = "single",
+            mappings = {
+                n = {
+                    ["<CR>"] = {
+                        action = "select",
+                        args = { close = true, pick = false },
+                    },
+                },
+            },
+        },
     },
 
-    -- Key mappings
     mappings = {
-        ["q"] = "CloseView",
-        ["<CR>"] = "Select",
-        ["<C-t>"] = "SelectTab",
-        ["|"] = "SelectVSplit",
-        ["-"] = "SelectSplit",
-        ["^"] = "GotoParent",
-        ["="] = "GotoCwd",
-        ["."] = "GotoNode",
-        ["#"] = "CollapseAll",
-        ["<BS>"] = "CollapseNode",
-    },
-
-    popups = {
-        permission = {
-        -- Respective popup configuration:
-        -- border
-        -- height
-        -- width
-        -- left
-        -- right
-        -- top
-        -- bottom
+        n = {
+            q = { action = "close" },
+            ["<CR>"] = { action = "select", args = { close = true, pick = true } },
+            ["<C-t>"] = { action = "select", args = { tabedit = true } },
+            ["|"] = { action = "select", args = { vsplit = true } },
+            ["-"] = { action = "select", args = { split = true } },
+            ["^"] = { action = "visit", args = { parent = true } },
+            ["="] = { action = "visit" },
+            ["."] = { action = "visit", args = { cursor = true } },
+            ["#"] = { action = "shrink" },
+            ["<BS>"] = { action = "shrink", args = { parent = true } },
         },
-    },
-
-    -- Buffer tracking
-    track_current_buffer = true,
-
-    -- Window configuration
-    win = {
-        -- Window border style
-        border = "single",
-        -- Default window kind
-        kind = "float",
-
-        -- Window kind presets
-        kind_presets = {
-        -- Define custom layouts
-        -- Values: "(0,1]rel" for relative or "{1...}abs" for absolute
-        },
-
-        -- Buffer and window options
-        buf_opts = {}, -- Custom buffer options
-        win_opts = {}, -- Custom window options
     },
 }
