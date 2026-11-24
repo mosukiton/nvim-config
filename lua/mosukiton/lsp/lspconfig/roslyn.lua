@@ -30,9 +30,10 @@ end
 
 ---@type vim.lsp.Config
 local config = {
-    -- Install once per machine with:
-    -- `dotnet tool install --global roslyn-language-server --prerelease`
-    -- The .NET global-tools directory must be on PATH.
+    -- Install once per machine at the version pinned in lua/mosukiton/pins.lua:
+    -- `dotnet tool install --global roslyn-language-server --version 5.13.0-1.26514.10`
+    -- (already installed? `dotnet tool update --global roslyn-language-server --version ...`)
+    -- Check with `dotnet tool list --global`. The .NET global-tools directory must be on PATH.
     cmd = get_roslyn_cmd(),
 
     -- Overrides for the `roslyn` server registered by roslyn.nvim (not `roslyn_ls`).
