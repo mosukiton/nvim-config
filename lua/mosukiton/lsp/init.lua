@@ -28,8 +28,8 @@ M.config = function()
     --  By default, Neovim doesn't support everything that is in the LSP specification.
     --  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
     --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
-    ---@type string[]
-    local ensure_installed = vim.tbl_keys(servers)
+    ---@type string[] `name@version` entries pinned in lua/mosukiton/pins.lua
+    local ensure_installed = require("mosukiton.pins").mason_ensure_installed(vim.tbl_keys(servers))
 
     -- Mason manages these servers. Roslyn is intentionally excluded because
     -- it is installed as the cross-platform .NET global tool.

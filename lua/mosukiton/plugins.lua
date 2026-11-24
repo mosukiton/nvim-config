@@ -1,16 +1,48 @@
+local pins = require("mosukiton.pins").plugins
+
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.uv.fs_stat(lazypath) then
-    vim.fn.system({
-        "git",
-        "clone",
-        "--filter=blob:none",
-        "https://github.com/folke/lazy.nvim.git",
-        "--branch=stable", -- latest stable release
-        lazypath,
-    })
+    -- Bootstrap lazy.nvim at the pinned commit rather than whatever `stable` points to today.
+    local lazy_commit = pins["folke/lazy.nvim"]
+    local function git(args)
+        local out = vim.fn.system(vim.list_extend({ "git" }, args))
+        if vim.v.shell_error ~= 0 then
+            vim.fn.delete(lazypath, "rf")
+            error("lazy.nvim bootstrap failed: git " .. table.concat(args, " ") .. "\n" .. out)
+        end
+        return vim.trim(out)
+    end
+    git({ "clone", "--filter=blob:none", "--no-checkout", "https://github.com/folke/lazy.nvim.git", lazypath })
+    git({ "-C", lazypath, "checkout", "--quiet", lazy_commit })
+    if git({ "-C", lazypath, "rev-parse", "HEAD" }) ~= lazy_commit then
+        vim.fn.delete(lazypath, "rf")
+        error("lazy.nvim bootstrap failed: HEAD does not match the pinned commit " .. lazy_commit)
+    end
 end
 
 vim.opt.rtp:prepend(lazypath)
+
+-- Every plugin spec (including dependencies) must have a commit in mosukiton.pins.
+-- Spec strings are turned into tables so the commit can be attached.
+local function pin(spec)
+    if type(spec) == "string" then
+        spec = { spec }
+    end
+    local repo = spec[1]
+    local commit = pins[repo]
+    if not commit then
+        error(("plugin %q is not pinned in lua/mosukiton/pins.lua"):format(tostring(repo)))
+    end
+    spec.commit = commit
+    if spec.dependencies then
+        local deps = type(spec.dependencies) == "string" and { spec.dependencies } or spec.dependencies
+        for i, dep in ipairs(deps) do
+            deps[i] = pin(dep)
+        end
+        spec.dependencies = deps
+    end
+    return spec
+end
 
 local plugins = {
     { "folke/lazy.nvim" },
@@ -186,7 +218,8 @@ local plugins = {
         -- Useful plugin to show you pending keybinds.
         'folke/which-key.nvim',
         dependencies = {
-            { "echasnovski/mini.icons", opts = {} },
+            -- Canonical repo (echasnovski/mini.icons is a redirect after the move to nvim-mini).
+            { "nvim-mini/mini.icons", opts = {} },
         },
         event = 'VimEnter', -- Sets the loading event to 'VimEnter'
         opts = require "mosukiton.whichkey",
@@ -221,4 +254,12 @@ local plugins = {
     }
 }
 
-require("lazy").setup(plugins)
+require("lazy").setup(vim.tbl_map(pin, plugins), {
+    -- No luarocks/hererocks installs: those would pull unpinned packages from luarocks.org.
+    -- None of the plugins above need it (plenary's rockspec is covered by lazy's community spec).
+    rocks = { enabled = false },
+    -- Don't let a project's `.lazy.lua` add plugins that bypass the pins above.
+    local_spec = false,
+    -- Never check for or auto-apply updates; upgrades go through mosukiton.pins.
+    checker = { enabled = false },
+})
